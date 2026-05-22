@@ -36,6 +36,13 @@
       "when": 1735257600000,
       "tag": "0004_progress_checkpoint_migration",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1776927249647,
+      "tag": "0005_illegal_nebula",
+      "breakpoints": true
     }
   ]
 }
