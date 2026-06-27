@@ -1,14 +1,7 @@
-import type { NextFunction, Response } from 'express';
-import type { RequestWithUser } from '../utils/types.ts';
+import { rateLimit, type Options } from 'express-rate-limit';
+import type { Request } from 'express';
 
-interface Bucket {
-  count: number;
-  resetAt: number;
-}
-
-const buckets = new Map<string, Bucket>();
-
-function getClientIp(req: RequestWithUser): string {
+function getClientIp(req: Request): string {
   const forwarded = req.headers['x-forwarded-for'];
   if (typeof forwarded === 'string' && forwarded.length > 0) {
     return forwarded.split(',')[0]?.trim() || req.ip || 'unknown';
@@ -21,73 +14,43 @@ function getClientIp(req: RequestWithUser): string {
   return req.ip || 'unknown';
 }
 
-function createKey(req: RequestWithUser, keySuffix?: string): string {
+const ipAndEmailKey = (req: Request): string => {
   const ip = getClientIp(req);
-  return keySuffix ? `${ip}:${keySuffix}` : ip;
-}
+  const email = (req.body as Record<string, unknown> | undefined)?.email;
+  const emailPart =
+    typeof email === 'string' ? email.toLocaleLowerCase() : 'unknown-email';
+  return `${ip}:${emailPart}`;
+};
 
-export function rateLimit(options: {
-  windowMs: number;
-  max: number;
-  keySuffix?: (req: RequestWithUser) => string | undefined;
-}) {
-  const { windowMs, max, keySuffix } = options;
-
-  return function rateLimitMiddleware(
-    req: RequestWithUser,
-    res: Response,
-    next: NextFunction,
-  ): void {
-    const suffix = keySuffix?.(req);
-    const key = createKey(req, suffix);
-    const now = Date.now();
-
-    const current = buckets.get(key);
-    if (!current || current.resetAt <= now) {
-      buckets.set(key, { count: 1, resetAt: now + windowMs });
-      next();
-      return;
-    }
-
-    if (current.count >= max) {
-      const retryAfterSeconds = Math.ceil((current.resetAt - now) / 1000);
-      res.setHeader('Retry-After', retryAfterSeconds.toString());
-      res.status(429).json({
-        error: 'Too many requests',
-        retryAfterSeconds,
-      });
-      return;
-    }
-
-    current.count += 1;
-    buckets.set(key, current);
-    next();
-  };
-}
+const rateLimitHandler: Options['handler'] = (_req, res, _next, options) => {
+  const retryAfterSeconds = Math.ceil(options.windowMs / 1000);
+  res.status(429).json({
+    error: 'Too many requests',
+    retryAfterSeconds,
+  });
+};
 
 export const authRateLimits = {
   loginByIpAndEmail: rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 10,
-    keySuffix: (req) => {
-      const email = (req.body as Record<string, unknown> | undefined)?.email;
-      return typeof email === 'string' ? email.toLowerCase() : 'unknown-email';
-    },
+    handler: rateLimitHandler,
+    keyGenerator: ipAndEmailKey,
   }),
   registerByIp: rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 10,
+    handler: rateLimitHandler,
   }),
   refreshByIp: rateLimit({
     windowMs: 5 * 60 * 1000,
     max: 30,
+    handler: rateLimitHandler,
   }),
   forgotPasswordByIpAndEmail: rateLimit({
     windowMs: 15 * 60 * 1000,
     max: 5,
-    keySuffix: (req) => {
-      const email = (req.body as Record<string, unknown> | undefined)?.email;
-      return typeof email === 'string' ? email.toLowerCase() : 'unknown-email';
-    },
+    handler: rateLimitHandler,
+    keyGenerator: ipAndEmailKey,
   }),
 };
