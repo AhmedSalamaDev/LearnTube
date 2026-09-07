@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import YouTube, { YouTubeProps, YouTubePlayer } from "react-youtube";
-import { api } from "../../lib/api";
+import { useEffect, useRef, useState } from 'react';
+import YouTube, { YouTubeProps, YouTubePlayer } from 'react-youtube';
+import { api } from '../../lib/api';
 
 interface VideoPlayerProps {
   videoId: string; // Database video ID
@@ -14,7 +14,7 @@ export const VideoPlayer = ({
   onVideoEnd,
 }: VideoPlayerProps) => {
   const playerRef = useRef<YouTubePlayer | null>(null);
-  const activityIntervalRef = useRef<number | null>(null);
+  const sessionPlayStartTimeRef = useRef<number | null>(null);
   const [isReady, setIsReady] = useState(false);
 
   // Load saved progress on mount
@@ -29,7 +29,7 @@ export const VideoPlayer = ({
           playerRef.current.seekTo(progress.checkpointSeconds, true);
         }
       } catch (error) {
-        console.error("Failed to load progress:", error);
+        console.error('Failed to load progress:', error);
       }
     };
 
@@ -38,76 +38,75 @@ export const VideoPlayer = ({
     }
   }, [videoId, isReady]);
 
-  // Start activity tracking (every 15 seconds)
-  const startActivityTracking = () => {
-    if (activityIntervalRef.current) return; // Already tracking
-
-    activityIntervalRef.current = setInterval(async () => {
-      try {
-        if (playerRef.current) {
-          const state = await playerRef.current.getPlayerState();
-          // Only log if video is playing (state === 1)
-          if (state === 1) {
-            await api.post("/activity/log", {
-              videoId,
-              watchedSecondsChunk: 15,
-            });
-          }
-        }
-      } catch (error) {
-        console.error("Failed to log activity:", error);
-      }
-    }, 15000); // Every 15 seconds
+  // Start tracking play session
+  const startTracking = () => {
+    if (!sessionPlayStartTimeRef.current) {
+      sessionPlayStartTimeRef.current = Date.now();
+    }
   };
 
-  // Stop activity tracking
-  const stopActivityTracking = () => {
-    if (activityIntervalRef.current) {
-      clearInterval(activityIntervalRef.current);
-      activityIntervalRef.current = null;
+  // Stop tracking and flush activity
+  const flushActivityLog = async () => {
+    if (sessionPlayStartTimeRef.current) {
+      const watchedSecondsChunk = Math.floor(
+        (Date.now() - sessionPlayStartTimeRef.current) / 1000,
+      );
+
+      sessionPlayStartTimeRef.current = null;
+
+      if (watchedSecondsChunk > 0) {
+        try {
+          await api.post('/activity/log', {
+            videoId,
+            watchedSecondsChunk,
+          });
+        } catch (error) {
+          console.error('Failed to log activity chunk:', error);
+        }
+      }
     }
   };
 
   // Save progress to backend
-  const saveProgress = async (isCompleted = false) => {
+  const saveProgress = async (clientIsCompleted = false) => {
+    await flushActivityLog();
+
     try {
       if (playerRef.current) {
         const currentTime = await playerRef.current.getCurrentTime();
         await api.patch(`/activity/progress/${videoId}`, {
           checkpointSeconds: Math.floor(currentTime),
-          isCompleted,
+          isCompleted: clientIsCompleted,
         });
       }
     } catch (error) {
-      console.error("Failed to save progress:", error);
+      console.error('Failed to save progress:', error);
     }
   };
 
   // YouTube player event handlers
-  const onReady: YouTubeProps["onReady"] = (event) => {
+  const onReady: YouTubeProps['onReady'] = (event) => {
     playerRef.current = event.target;
     setIsReady(true);
   };
 
-  const onPlay: YouTubeProps["onPlay"] = () => {
-    startActivityTracking();
+  const onPlay: YouTubeProps['onPlay'] = () => {
+    startTracking();
   };
 
-  const onPause: YouTubeProps["onPause"] = () => {
-    stopActivityTracking();
+  const onPause: YouTubeProps['onPause'] = () => {
     saveProgress(false);
   };
 
-  const onEnd: YouTubeProps["onEnd"] = () => {
-    stopActivityTracking();
+  const onEnd: YouTubeProps['onEnd'] = () => {
     saveProgress(true);
     onVideoEnd?.();
   };
 
-  const onStateChange: YouTubeProps["onStateChange"] = (event) => {
+  const onStateChange: YouTubeProps['onStateChange'] = (event) => {
     // Handle seek events (state change without play/pause)
+    // 2 is Paused
     if (event.data === 2) {
-      // Paused
       saveProgress(false);
     }
   };
@@ -115,7 +114,6 @@ export const VideoPlayer = ({
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      stopActivityTracking();
       saveProgress(false);
     };
   }, []);
@@ -128,22 +126,22 @@ export const VideoPlayer = ({
       }
     };
 
-    document.addEventListener("visibilitychange", handleVisibilityChange);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
 
     return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
 
-  const opts: YouTubeProps["opts"] = {
-    width: "100%",
-    height: "100%",
+  const opts: YouTubeProps['opts'] = {
+    width: '100%',
+    height: '100%',
     playerVars: {
       autoplay: 0,
       modestbranding: 1,
       rel: 0,
     },
-    host: "https://www.youtube-nocookie.com", // Use privacy-enhanced mode to reduce cookie issues
+    host: 'https://www.youtube-nocookie.com', // Use privacy-enhanced mode to reduce cookie issues
   };
 
   return (

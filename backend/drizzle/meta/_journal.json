@@ -43,6 +43,13 @@
       "when": 1776927249647,
       "tag": "0005_illegal_nebula",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1788753476476,
+      "tag": "0006_regular_quasimodo",
+      "breakpoints": true
     }
   ]
 }

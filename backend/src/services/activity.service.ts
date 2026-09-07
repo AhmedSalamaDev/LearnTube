@@ -1,4 +1,4 @@
-import { db } from "../db/index.ts";
+import { db } from '../db/index.ts';
 import {
   userActivity,
   progress,
@@ -6,20 +6,21 @@ import {
   courseProgress,
   videos,
   courses,
-} from "../db/schema.ts";
-import { eq, and, sql } from "drizzle-orm";
+  userCourses,
+} from '../db/schema.ts';
+import { eq, and, sql } from 'drizzle-orm';
 
 export async function logActivity(
   userId: string,
   videoId: string,
-  watchedSecondsChunk: number
+  watchedSecondsChunk: number,
 ) {
-  const today = new Date().toISOString().split("T")[0] as string;
+  const today = new Date().toISOString().split('T')[0] as string;
 
   const [video] = await db.select().from(videos).where(eq(videos.id, videoId));
 
   if (!video) {
-    throw new Error("Video not found");
+    throw new Error('Video not found');
   }
 
   await db.transaction(async (tx) => {
@@ -35,8 +36,8 @@ export async function logActivity(
       .where(
         and(
           eq(dailyActivity.userId, userId),
-          sql`${dailyActivity.date} = ${today}`
-        )
+          sql`${dailyActivity.date} = ${today}`,
+        ),
       );
 
     if (existingDaily.length > 0) {
@@ -48,8 +49,8 @@ export async function logActivity(
         .where(
           and(
             eq(dailyActivity.userId, userId),
-            sql`${dailyActivity.date} = ${today}`
-          )
+            sql`${dailyActivity.date} = ${today}`,
+          ),
         );
     } else {
       await tx.insert(dailyActivity).values({
@@ -65,8 +66,8 @@ export async function logActivity(
       .where(
         and(
           eq(courseProgress.userId, userId),
-          eq(courseProgress.coursesId, video.coursesId)
-        )
+          eq(courseProgress.coursesId, video.coursesId),
+        ),
       );
 
     if (existingCourseProgress.length > 0) {
@@ -78,8 +79,8 @@ export async function logActivity(
         .where(
           and(
             eq(courseProgress.userId, userId),
-            eq(courseProgress.coursesId, video.coursesId)
-          )
+            eq(courseProgress.coursesId, video.coursesId),
+          ),
         );
     } else {
       await tx.insert(courseProgress).values({
@@ -123,12 +124,12 @@ export async function updateVideoProgress(
   userId: string,
   videoId: string,
   checkpointSeconds: number,
-  isCompleted: boolean
+  clientIsCompleted: boolean,
 ) {
   const [video] = await db.select().from(videos).where(eq(videos.id, videoId));
 
   if (!video) {
-    throw new Error("Video not found");
+    throw new Error('Video not found');
   }
 
   const [existing] = await db
@@ -137,6 +138,11 @@ export async function updateVideoProgress(
     .where(and(eq(progress.userId, userId), eq(progress.videoId, videoId)));
 
   const wasCompleted = existing?.completed || false;
+
+  // Define progress metric: 90% of total duration
+  const completionThreshold = video.durationSeconds * 0.9;
+  const isCompleted =
+    checkpointSeconds >= completionThreshold || clientIsCompleted;
 
   await db.transaction(async (tx) => {
     await tx
@@ -167,8 +173,8 @@ export async function updateVideoProgress(
         .where(
           and(
             eq(courseProgress.userId, userId),
-            eq(courseProgress.coursesId, video.coursesId)
-          )
+            eq(courseProgress.coursesId, video.coursesId),
+          ),
         );
     }
   });
@@ -192,8 +198,8 @@ export async function getCourseProgressData(userId: string, courseId: string) {
     .where(
       and(
         eq(courseProgress.userId, userId),
-        eq(courseProgress.coursesId, courseId)
-      )
+        eq(courseProgress.coursesId, courseId),
+      ),
     );
 
   const [course] = await db
@@ -212,8 +218,8 @@ export async function getCourseProgressData(userId: string, courseId: string) {
     .where(
       and(
         eq(progress.userId, userId),
-        sql`${progress.videoId} IN (SELECT id FROM ${videos} WHERE ${videos.coursesId} = ${courseId})`
-      )
+        sql`${progress.videoId} IN (SELECT id FROM ${videos} WHERE ${videos.coursesId} = ${courseId})`,
+      ),
     );
 
   return {
@@ -231,7 +237,7 @@ export async function getDayActivityData(userId: string, dayDate: string) {
     .select()
     .from(dailyActivity)
     .where(
-      and(eq(dailyActivity.userId, userId), eq(dailyActivity.date, dayDate))
+      and(eq(dailyActivity.userId, userId), eq(dailyActivity.date, dayDate)),
     );
 
   // Get all activities (video watches) for that day
@@ -254,8 +260,8 @@ export async function getDayActivityData(userId: string, dayDate: string) {
       and(
         eq(userActivity.userId, userId),
         sql`${userActivity.timestamp} >= ${dayStart}`,
-        sql`${userActivity.timestamp} <= ${dayEnd}`
-      )
+        sql`${userActivity.timestamp} <= ${dayEnd}`,
+      ),
     )
     .orderBy(userActivity.timestamp);
 
@@ -280,8 +286,8 @@ export async function getHeatmapData(userId: string, year: number) {
       and(
         eq(dailyActivity.userId, userId),
         sql`${dailyActivity.date} >= ${startDate}`,
-        sql`${dailyActivity.date} <= ${endDate}`
-      )
+        sql`${dailyActivity.date} <= ${endDate}`,
+      ),
     )
     .orderBy(dailyActivity.date);
 
@@ -296,10 +302,10 @@ export async function getDashboardStats(userId: string) {
     .from(dailyActivity)
     .where(eq(dailyActivity.userId, userId));
 
-  const userCourses = await db
+  const userCoursesList = await db
     .select()
-    .from(courses)
-    .where(eq(courses.userId, userId));
+    .from(userCourses)
+    .where(eq(userCourses.userId, userId));
 
   const coursesProgressData = await db
     .select()
@@ -308,12 +314,12 @@ export async function getDashboardStats(userId: string) {
 
   const totalCompleted = coursesProgressData.reduce(
     (sum, cp) => sum + cp.completedVideos,
-    0
+    0,
   );
 
   return {
     totalWatchTimeSeconds: totalActivityResult?.totalSeconds || 0,
-    totalCourses: userCourses.length,
+    totalCourses: userCoursesList.length,
     totalCompletedVideos: totalCompleted,
     coursesProgress: coursesProgressData,
   };

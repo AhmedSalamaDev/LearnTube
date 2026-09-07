@@ -1,10 +1,8 @@
 export const LoginPage = () => {
   const handleLogin = () => {
     // Redirect to backend Google OAuth endpoint
-    const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:3000";
-    // Remove /api suffix if present (for production URL)
-    const baseUrl = apiUrl.replace(/\/api$/, "");
-    window.location.href = `${baseUrl}/auth/google`;
+    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+    window.location.href = `${apiUrl}/auth/google`;
   };
 
   return (

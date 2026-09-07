@@ -60,41 +60,43 @@ export const refreshTokens = pgTable(
   ],
 );
 
-export const courses = pgTable(
-  'courses',
+export const userCourses = pgTable(
+  'user_courses',
   {
-    id: uuid('id').primaryKey().defaultRandom(),
     userId: uuid('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
-    title: varchar('title', { length: 255 }).notNull(),
-    describtion: text('describtion'),
-    thumbnailUrl: text('thumbnail_url'),
-    youtubePlaylistId: varchar('youtube_playlist_id', { length: 255 }),
-    totalDurationSeconds: integer('total_duration_second').default(0).notNull(),
-    createdAt: timestamp('created_at').defaultNow().notNull(),
-  },
-  (table) => [unique().on(table.userId, table.youtubePlaylistId)],
-);
-
-export const videos = pgTable(
-  'videos',
-  {
-    id: uuid('id').primaryKey().defaultRandom(),
-    coursesId: uuid('course_id')
+    courseId: uuid('course_id')
       .notNull()
       .references(() => courses.id, { onDelete: 'cascade' }),
-    userId: uuid('user_id')
-      .notNull()
-      .references(() => users.id, { onDelete: 'cascade' }),
-    youtubeVideoId: varchar('youtube_video_id', { length: 255 }).notNull(),
-    title: text('title').notNull(),
-    durationSeconds: integer('duration_seconds').notNull(),
-    thumbnailUrl: text('thumbnail_url'),
-    order: integer('order').default(0),
+    createdAt: timestamp('created_at').defaultNow().notNull(),
   },
-  (table) => [unique().on(table.userId, table.youtubeVideoId)],
+  (table) => [primaryKey({ columns: [table.userId, table.courseId] })],
 );
+
+export const courses = pgTable('courses', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  title: varchar('title', { length: 255 }).notNull(),
+  describtion: text('describtion'),
+  thumbnailUrl: text('thumbnail_url'),
+  youtubePlaylistId: varchar('youtube_playlist_id', { length: 255 }).unique(),
+  totalDurationSeconds: integer('total_duration_second').default(0).notNull(),
+  createdAt: timestamp('created_at').defaultNow().notNull(),
+});
+
+export const videos = pgTable('videos', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  coursesId: uuid('course_id')
+    .notNull()
+    .references(() => courses.id, { onDelete: 'cascade' }),
+  youtubeVideoId: varchar('youtube_video_id', { length: 255 })
+    .notNull()
+    .unique(),
+  title: text('title').notNull(),
+  durationSeconds: integer('duration_seconds').notNull(),
+  thumbnailUrl: text('thumbnail_url'),
+  order: integer('order').default(0),
+});
 
 export const progress = pgTable(
   'progress',
@@ -154,7 +156,7 @@ export const courseProgress = pgTable(
 
 //////----//////
 export const usersRelations = relations(users, ({ many }) => ({
-  courses: many(courses),
+  userCourses: many(userCourses),
   progress: many(progress),
   userActivity: many(userActivity),
   dailyActivity: many(dailyActivity),
@@ -169,11 +171,19 @@ export const refreshTokensRelations = relations(refreshTokens, ({ one }) => ({
   }),
 }));
 
-export const coursesRelations = relations(courses, ({ one, many }) => ({
+export const userCoursesRelations = relations(userCourses, ({ one }) => ({
   user: one(users, {
-    fields: [courses.userId],
+    fields: [userCourses.userId],
     references: [users.id],
   }),
+  course: one(courses, {
+    fields: [userCourses.courseId],
+    references: [courses.id],
+  }),
+}));
+
+export const coursesRelations = relations(courses, ({ many }) => ({
+  userCourses: many(userCourses),
   videos: many(videos),
   courseProgress: many(courseProgress),
 }));

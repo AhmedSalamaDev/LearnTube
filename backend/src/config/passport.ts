@@ -1,11 +1,11 @@
-import passport from "passport";
-import { Strategy as GoogleStrategy } from "passport-google-oauth20";
+import passport from 'passport';
+import { Strategy as GoogleStrategy } from 'passport-google-oauth20';
 
-const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || "";
-const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || "";
+const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
+const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
 const GOOGLE_CALLBACK_URL =
   process.env.GOOGLE_CALLBACK_URL ||
-  "http://localhost:3000/auth/google/callback";
+  'http://localhost:3000/api/v1/auth/google/callback';
 
 export function configurePassport() {
   passport.use(
@@ -17,8 +17,8 @@ export function configurePassport() {
       },
       (accessToken, refreshToken, profile, done) => {
         return done(null, profile);
-      }
-    )
+      },
+    ),
   );
 
   passport.serializeUser((user, done) => {

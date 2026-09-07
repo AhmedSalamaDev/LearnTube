@@ -3,12 +3,17 @@ import session from 'express-session';
 import helmet from 'helmet';
 import cors from 'cors';
 import passport from 'passport';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { db } from './db/index.ts';
 import * as schema from './db/schema.ts';
 import { configurePassport } from './config/passport.ts';
 import authRoutes from './routes/auth.routes.ts';
 import courseRoutes from './routes/course.routes.ts';
 import activityRoutes from './routes/activity.routes.ts';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 
@@ -23,7 +28,11 @@ const allowedOrigins = [
   process.env.CLIENT_URL,
 ].filter(Boolean);
 
-app.use(helmet());
+app.use(
+  helmet({
+    contentSecurityPolicy: false, // Disabled to prevent blocking React app assets and inline styles/images
+  }),
+);
 
 app.use(
   cors({
@@ -62,8 +71,19 @@ app.use(
 app.use(passport.initialize());
 app.use(passport.session());
 
-app.use('/auth', authRoutes);
-app.use('/courses', courseRoutes);
-app.use('/activity', activityRoutes);
+// API Routes
+app.use('/api/v1/auth', authRoutes);
+app.use('/api/v1/courses', courseRoutes);
+app.use('/api/v1/activity', activityRoutes);
+
+// Serve Frontend in Production
+if (process.env.NODE_ENV === 'production') {
+  const frontendDistPath = path.join(__dirname, '../../frontend/dist');
+  app.use(express.static(frontendDistPath));
+
+  app.get('*', (req, res) => {
+    res.sendFile(path.join(frontendDistPath, 'index.html'));
+  });
+}
 
 export { app };

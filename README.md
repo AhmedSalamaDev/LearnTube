@@ -2,7 +2,7 @@
 
 A YouTube-based learning platform backend that tracks video watch progress, generates activity heatmaps, and provides comprehensive learning analytics.
 
-## 🚀 Features
+## Features
 
 - **Google OAuth Authentication** - Secure login with Google accounts
 - **YouTube Integration** - Add videos and playlists from YouTube
