@@ -214,3 +214,65 @@ export async function deleteCourse(courseId: string, userId: string) {
 
   return { success: true };
 }
+export async function syncPlaylistCourse(courseId: string, userId: string) {
+  const [enrollment] = await db
+    .select()
+    .from(userCourses)
+    .where(
+      and(eq(userCourses.courseId, courseId), eq(userCourses.userId, userId))
+    );
+
+  if (!enrollment) {
+    throw new Error('Unauthorized or course not found');
+  }
+
+  const [course] = await db
+    .select()
+    .from(courses)
+    .where(eq(courses.id, courseId));
+
+  if (!course || !course.youtubePlaylistId || course.youtubePlaylistId.startsWith('video_')) {
+    throw new Error('Course is not a valid playlist');
+  }
+
+  const playlistMetadata = await fetchPlaylistMetadata(course.youtubePlaylistId);
+
+  const totalDuration = playlistMetadata.videos.reduce(
+    (sum, v) => sum + v.durationSeconds,
+    0
+  );
+
+  await db
+    .update(courses)
+    .set({
+      title: playlistMetadata.title,
+      describtion: playlistMetadata.description,
+      thumbnailUrl: playlistMetadata.thumbnailUrl,
+      totalDurationSeconds: totalDuration,
+    })
+    .where(eq(courses.id, courseId));
+
+  const existingVideos = await db
+    .select()
+    .from(videos)
+    .where(eq(videos.coursesId, courseId));
+
+  const existingVideoIds = new Set(existingVideos.map((v) => v.youtubeVideoId));
+
+  const newVideos = playlistMetadata.videos
+    .map((v, index) => ({
+      coursesId: courseId,
+      youtubeVideoId: v.videoId,
+      title: v.title,
+      durationSeconds: v.durationSeconds,
+      thumbnailUrl: v.thumbnailUrl,
+      order: index,
+    }))
+    .filter((v) => !existingVideoIds.has(v.youtubeVideoId));
+
+  if (newVideos.length > 0) {
+    await db.insert(videos).values(newVideos).onConflictDoNothing();
+  }
+  
+  return { success: true, addedVideosCount: newVideos.length };
+}

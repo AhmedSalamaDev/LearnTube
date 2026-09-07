@@ -1,9 +1,9 @@
-import { google } from "googleapis";
+import { google } from 'googleapis';
 
-const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || "";
+const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY || '';
 
 const youtube = google.youtube({
-  version: "v3",
+  version: 'v3',
   auth: YOUTUBE_API_KEY,
 });
 
@@ -26,37 +26,37 @@ function parseISO8601Duration(duration: string): number {
   const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/);
   if (!match) return 0;
 
-  const hours = parseInt(match[1] || "0");
-  const minutes = parseInt(match[2] || "0");
-  const seconds = parseInt(match[3] || "0");
+  const hours = parseInt(match[1] || '0');
+  const minutes = parseInt(match[2] || '0');
+  const seconds = parseInt(match[3] || '0');
 
   return hours * 3600 + minutes * 60 + seconds;
 }
 
 export function extractYouTubeId(url: string): {
-  type: "video" | "playlist";
+  type: 'video' | 'playlist';
   id: string;
 } | null {
   try {
     const urlObj = new URL(url);
-    const hostname = urlObj.hostname.replace("www.", "");
+    const hostname = urlObj.hostname.replace('www.', '');
 
-    if (hostname === "youtube.com" || hostname === "m.youtube.com") {
-      const playlistId = urlObj.searchParams.get("list");
+    if (hostname === 'youtube.com' || hostname === 'm.youtube.com') {
+      const playlistId = urlObj.searchParams.get('list');
       if (playlistId) {
-        return { type: "playlist", id: playlistId };
+        return { type: 'playlist', id: playlistId };
       }
 
-      const videoId = urlObj.searchParams.get("v");
+      const videoId = urlObj.searchParams.get('v');
       if (videoId) {
-        return { type: "video", id: videoId };
+        return { type: 'video', id: videoId };
       }
     }
 
-    if (hostname === "youtu.be") {
+    if (hostname === 'youtu.be') {
       const videoId = urlObj.pathname.slice(1);
       if (videoId) {
-        return { type: "video", id: videoId };
+        return { type: 'video', id: videoId };
       }
     }
 
@@ -67,10 +67,10 @@ export function extractYouTubeId(url: string): {
 }
 
 export async function fetchVideoMetadata(
-  videoId: string
+  videoId: string,
 ): Promise<VideoMetadata> {
   const response = await youtube.videos.list({
-    part: ["snippet", "contentDetails"],
+    part: ['snippet', 'contentDetails'],
     id: [videoId],
   });
 
@@ -84,18 +84,18 @@ export async function fetchVideoMetadata(
 
   return {
     videoId,
-    title: snippet?.title || "Untitled Video",
-    durationSeconds: parseISO8601Duration(contentDetails?.duration || "PT0S"),
+    title: snippet?.title || 'Untitled Video',
+    durationSeconds: parseISO8601Duration(contentDetails?.duration || 'PT0S'),
     thumbnailUrl:
-      snippet?.thumbnails?.high?.url || snippet?.thumbnails?.default?.url || "",
+      snippet?.thumbnails?.high?.url || snippet?.thumbnails?.default?.url || '',
   };
 }
 
 export async function fetchPlaylistMetadata(
-  playlistId: string
+  playlistId: string,
 ): Promise<PlaylistMetadata> {
   const playlistResponse = await youtube.playlists.list({
-    part: ["snippet"],
+    part: ['snippet'],
     id: [playlistId],
   });
 
@@ -111,7 +111,7 @@ export async function fetchPlaylistMetadata(
 
   do {
     const itemsResponse = await youtube.playlistItems.list({
-      part: ["contentDetails"],
+      part: ['contentDetails'],
       playlistId,
       maxResults: 50,
       ...(nextPageToken && { pageToken: nextPageToken }),
@@ -130,21 +130,21 @@ export async function fetchPlaylistMetadata(
   for (let i = 0; i < videoIds.length; i += 50) {
     const batch = videoIds.slice(i, i + 50);
     const videosResponse = await youtube.videos.list({
-      part: ["snippet", "contentDetails"],
+      part: ['snippet', 'contentDetails'],
       id: batch,
     });
 
     const batchVideos =
       videosResponse.data.items?.map((video, index) => ({
-        videoId: video.id || "",
-        title: video.snippet?.title || "Untitled Video",
+        videoId: video.id || '',
+        title: video.snippet?.title || 'Untitled Video',
         durationSeconds: parseISO8601Duration(
-          video.contentDetails?.duration || "PT0S"
+          video.contentDetails?.duration || 'PT0S',
         ),
         thumbnailUrl:
           video.snippet?.thumbnails?.high?.url ||
           video.snippet?.thumbnails?.default?.url ||
-          "",
+          '',
       })) || [];
 
     videos.push(...batchVideos);
@@ -152,10 +152,44 @@ export async function fetchPlaylistMetadata(
 
   return {
     playlistId,
-    title: snippet?.title || "Untitled Playlist",
-    description: snippet?.description || "",
+    title: snippet?.title || 'Untitled Playlist',
+    description: snippet?.description || '',
     thumbnailUrl:
-      snippet?.thumbnails?.high?.url || snippet?.thumbnails?.default?.url || "",
+      snippet?.thumbnails?.high?.url || snippet?.thumbnails?.default?.url || '',
     videos,
   };
+}
+export interface SearchResult {
+  id: string;
+  type: 'video' | 'playlist';
+  title: string;
+  description: string;
+  thumbnailUrl: string;
+  channelTitle: string;
+}
+
+export async function searchYouTube(
+  query: string,
+  maxResults: number = 10,
+): Promise<SearchResult[]> {
+  const response = await youtube.search.list({
+    part: ['snippet'],
+    q: query,
+    maxResults,
+    type: ['video', 'playlist'],
+  });
+
+  return (response.data.items || [])
+    .map((item: any) => ({
+      id: item.id?.videoId || item.id?.playlistId || '',
+      type: (item.id?.videoId ? 'video' : 'playlist') as 'video' | 'playlist',
+      title: item.snippet?.title || '',
+      description: item.snippet?.description || '',
+      thumbnailUrl:
+        item.snippet?.thumbnails?.high?.url ||
+        item.snippet?.thumbnails?.default?.url ||
+        '',
+      channelTitle: item.snippet?.channelTitle || '',
+    }))
+    .filter((item: any) => item.id !== '');
 }

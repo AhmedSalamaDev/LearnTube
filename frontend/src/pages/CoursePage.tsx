@@ -1,8 +1,8 @@
-import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
-import { api } from "../lib/api";
-import { Spinner } from "../components/ui/Spinner";
-import { VideoCard } from "../components/course/VideoCard";
+import { useEffect, useState } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { api } from '../lib/api';
+import { Spinner } from '../components/ui/Spinner';
+import { VideoCard } from '../components/course/VideoCard';
 
 interface Video {
   id: string;
@@ -53,6 +53,7 @@ export const CoursePage = () => {
   const [course, setCourse] = useState<Course | null>(null);
   const [progress, setProgress] = useState<CourseProgress | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSyncing, setIsSyncing] = useState(false);
 
   useEffect(() => {
     const fetchCourse = async () => {
@@ -65,11 +66,11 @@ export const CoursePage = () => {
 
         // Fetch progress
         const progressResponse = await api.get(
-          `/activity/course-progress/${id}`
+          `/activity/course-progress/${id}`,
         );
         setProgress(progressResponse.data);
       } catch (error) {
-        console.error("Failed to fetch course:", error);
+        console.error('Failed to fetch course:', error);
       } finally {
         setIsLoading(false);
       }
@@ -79,6 +80,22 @@ export const CoursePage = () => {
       fetchCourse();
     }
   }, [id]);
+
+  const handleSync = async () => {
+    if (!course) return;
+    try {
+      setIsSyncing(true);
+      await api.post(`/courses/${course.id}/sync`);
+
+      const courseResponse = await api.get(`/courses/${id}`);
+      setCourse(courseResponse.data.course);
+    } catch (error) {
+      console.error('Failed to sync course:', error);
+      alert('Failed to sync course. Check console for details.');
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   if (isLoading) {
     return <Spinner />;
@@ -116,6 +133,9 @@ export const CoursePage = () => {
   progress?.videoProgress.forEach((vp) => {
     progressMap.set(vp.videoId, vp);
   });
+
+  const isPlaylist =
+    course.youtubePlaylistId && !course.youtubePlaylistId.startsWith('video_');
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -172,9 +192,33 @@ export const CoursePage = () => {
 
           {/* Info */}
           <div className="flex-1">
-            <h1 className="text-3xl font-bold text-gray-900 mb-2">
-              {course.title}
-            </h1>
+            <div className="flex justify-between items-start mb-2">
+              <h1 className="text-3xl font-bold text-gray-900">
+                {course.title}
+              </h1>
+              {isPlaylist && (
+                <button
+                  onClick={handleSync}
+                  disabled={isSyncing}
+                  className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:opacity-50 transition-colors"
+                >
+                  <svg
+                    className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                    />
+                  </svg>
+                  {isSyncing ? 'Syncing...' : 'Sync Playlist'}
+                </button>
+              )}
+            </div>
 
             {course.describtion && (
               <p className="text-gray-600 mb-4">{course.describtion}</p>
@@ -184,7 +228,7 @@ export const CoursePage = () => {
               <span>{course.videos.length} videos</span>
               <span>{formatDuration(course.totalDurationSeconds)} total</span>
               <span>
-                {progress?.completedVideos || 0} /{course.videos.length}{" "}
+                {progress?.completedVideos || 0} /{course.videos.length}{' '}
                 completed
               </span>
             </div>

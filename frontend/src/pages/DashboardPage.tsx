@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
-import { api } from "../lib/api";
-import { CourseCard } from "../components/dashboard/CourseCard";
-import { AddCourseModal } from "../components/dashboard/AddCourseModal";
-import { Button } from "../components/ui/Button";
-import { Spinner } from "../components/ui/Spinner";
+import { useEffect, useState } from 'react';
+import { api } from '../lib/api';
+import { CourseCard } from '../components/dashboard/CourseCard';
+import { AddCourseModal } from '../components/dashboard/AddCourseModal';
+import { SearchCourseModal } from '../components/dashboard/SearchCourseModal';
+import { Button } from '../components/ui/Button';
+import { Spinner } from '../components/ui/Spinner';
 
 interface Course {
   id: string;
@@ -19,15 +20,16 @@ export const DashboardPage = () => {
   const [courses, setCourses] = useState<Course[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [error, setError] = useState("");
+  const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
+  const [error, setError] = useState('');
 
   const fetchCourses = async () => {
     try {
       setIsLoading(true);
-      setError("");
+      setError('');
 
       // Fetch courses list
-      const coursesResponse = await api.get("/courses");
+      const coursesResponse = await api.get('/courses');
       const coursesList = coursesResponse.data.courses || [];
 
       // Fetch progress data for each course
@@ -35,7 +37,7 @@ export const DashboardPage = () => {
         coursesList.map(async (course: Course) => {
           try {
             const progressResponse = await api.get(
-              `/activity/course-progress/${course.id}`
+              `/activity/course-progress/${course.id}`,
             );
             const progressData = progressResponse.data;
 
@@ -55,7 +57,7 @@ export const DashboardPage = () => {
           } catch (err) {
             console.error(
               `Failed to fetch progress for course ${course.id}:`,
-              err
+              err,
             );
             // Return course with 0 progress if fetch fails
             return {
@@ -64,13 +66,13 @@ export const DashboardPage = () => {
               totalWatchedSeconds: 0,
             };
           }
-        })
+        }),
       );
 
       setCourses(coursesWithProgress);
     } catch (err) {
-      console.error("Failed to fetch courses:", err);
-      setError("Failed to load courses");
+      console.error('Failed to fetch courses:', err);
+      setError('Failed to load courses');
     } finally {
       setIsLoading(false);
     }
@@ -90,27 +92,50 @@ export const DashboardPage = () => {
         <div>
           <h1 className="text-3xl font-bold text-gray-900">My Courses</h1>
           <p className="text-gray-600 mt-1">
-            {courses.length} {courses.length === 1 ? "course" : "courses"}
+            {courses.length} {courses.length === 1 ? 'course' : 'courses'}
           </p>
         </div>
-        <Button onClick={() => setIsModalOpen(true)}>
-          <span className="flex items-center gap-2">
-            <svg
-              className="w-5 h-5"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 4v16m8-8H4"
-              />
-            </svg>
-            Add Course
-          </span>
-        </Button>
+        <div className="flex gap-4">
+          <Button
+            variant="secondary"
+            onClick={() => setIsSearchModalOpen(true)}
+          >
+            <span className="flex items-center gap-2">
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                />
+              </svg>
+              Search YouTube
+            </span>
+          </Button>
+          <Button onClick={() => setIsModalOpen(true)}>
+            <span className="flex items-center gap-2">
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              Add URL
+            </span>
+          </Button>
+        </div>
       </div>
 
       {error && (
@@ -138,11 +163,16 @@ export const DashboardPage = () => {
             No courses yet
           </h2>
           <p className="text-gray-500 mb-6">
-            Add your first course from YouTube to get started!
+            Search or add a URL to get started!
           </p>
-          <Button onClick={() => setIsModalOpen(true)}>
-            Add Your First Course
-          </Button>
+          <div className="flex gap-4 justify-center">
+            <Button onClick={() => setIsSearchModalOpen(true)}>
+              Search YouTube
+            </Button>
+            <Button variant="secondary" onClick={() => setIsModalOpen(true)}>
+              Add URL
+            </Button>
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -165,6 +195,11 @@ export const DashboardPage = () => {
       <AddCourseModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
+        onSuccess={fetchCourses}
+      />
+      <SearchCourseModal
+        isOpen={isSearchModalOpen}
+        onClose={() => setIsSearchModalOpen(false)}
         onSuccess={fetchCourses}
       />
     </div>
