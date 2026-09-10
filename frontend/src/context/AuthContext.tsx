@@ -4,8 +4,8 @@ import {
   useEffect,
   useCallback,
   ReactNode,
-} from "react";
-import { api } from "../lib/api";
+} from 'react';
+import { api } from '../lib/api';
 
 interface User {
   id: string;
@@ -14,6 +14,7 @@ interface User {
   name: string;
   avatarUrl: string | null;
   createdAt: string;
+  emailVerified: boolean;
 }
 
 interface AuthContextType {
@@ -24,7 +25,7 @@ interface AuthContextType {
 }
 
 export const AuthContext = createContext<AuthContextType | undefined>(
-  undefined
+  undefined,
 );
 
 interface AuthProviderProps {
@@ -37,45 +38,45 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
 
   const checkAuth = useCallback(async (): Promise<boolean> => {
     try {
-      console.log("[AuthContext] Checking authentication...");
-      const token = localStorage.getItem("auth_token");
+      console.log('[AuthContext] Checking authentication...');
+      const token = localStorage.getItem('auth_token');
       console.log(
-        "[AuthContext] Token in localStorage:",
-        token ? "EXISTS" : "NOT FOUND"
+        '[AuthContext] Token in localStorage:',
+        token ? 'EXISTS' : 'NOT FOUND',
       );
 
       if (!token) {
-        console.log("[AuthContext] No token, skipping API call");
+        console.log('[AuthContext] No token, skipping API call');
         setUser(null);
         setIsLoading(false);
         return false;
       }
 
-      const response = await api.get("/auth/me");
-      console.log("[AuthContext] User authenticated:", response.data.user);
+      const response = await api.get('/auth/me');
+      console.log('[AuthContext] User authenticated:', response.data.user);
       setUser(response.data.user);
       setIsLoading(false);
       return true;
     } catch (error) {
-      console.log("[AuthContext] User not authenticated:", error);
+      console.log('[AuthContext] User not authenticated:', error);
       setUser(null);
-      localStorage.removeItem("auth_token");
+      localStorage.removeItem('auth_token');
       setIsLoading(false);
       return false;
     }
   }, []);
 
   const logout = useCallback(async () => {
-    console.log("[AuthContext] Logout initiated");
+    console.log('[AuthContext] Logout initiated');
     try {
-      await api.post("/auth/logout");
-      console.log("[AuthContext] Logout API call successful");
+      await api.post('/auth/logout');
+      console.log('[AuthContext] Logout API call successful');
     } catch (error) {
-      console.error("[AuthContext] Logout failed:", error);
+      console.error('[AuthContext] Logout failed:', error);
     } finally {
       setUser(null);
-      localStorage.removeItem("auth_token");
-      console.log("[AuthContext] User state cleared and token removed");
+      localStorage.removeItem('auth_token');
+      console.log('[AuthContext] User state cleared and token removed');
     }
   }, []);
 

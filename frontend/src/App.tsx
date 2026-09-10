@@ -1,12 +1,13 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "./context/AuthContext";
-import { ProtectedLayout } from "./components/layout/ProtectedLayout";
-import { LoginPage } from "./pages/LoginPage";
-import { AuthCallback } from "./pages/AuthCallback";
-import { DashboardPage } from "./pages/DashboardPage";
-import { ProfilePage } from "./pages/ProfilePage";
-import { CoursePage } from "./pages/CoursePage";
-import { PlayerPage } from "./pages/PlayerPage";
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import { ProtectedLayout } from './components/layout/ProtectedLayout';
+import { LoginPage } from './pages/LoginPage';
+import { AuthCallback } from './pages/AuthCallback';
+import { VerifyEmailPage } from './pages/VerifyEmailPage';
+import { DashboardPage } from './pages/DashboardPage';
+import { ProfilePage } from './pages/ProfilePage';
+import { CoursePage } from './pages/CoursePage';
+import { PlayerPage } from './pages/PlayerPage';
 
 function App() {
   return (
@@ -15,6 +16,7 @@ function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route path="/verify-email" element={<VerifyEmailPage />} />
 
           <Route element={<ProtectedLayout />}>
             <Route path="/" element={<DashboardPage />} />

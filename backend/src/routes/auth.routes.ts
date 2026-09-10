@@ -12,6 +12,7 @@ import {
   resetPassword,
   setPassword,
   verifyEmail,
+  resendVerification,
 } from '../controllers/auth.controller.ts';
 import { requireAuth } from '../middleware/auth.middleware.ts';
 import { authRateLimits } from '../middleware/rate-limit.middleware.ts';
@@ -52,6 +53,12 @@ router.post(
   requireFields(['token']) as any,
   validateTokenField('token') as any,
   verifyEmail as any,
+);
+router.post(
+  '/resend-verification',
+  requireFields(['email']) as any,
+  validateEmailField as any,
+  resendVerification as any,
 );
 router.post(
   '/login',

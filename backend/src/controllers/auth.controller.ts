@@ -12,6 +12,7 @@ import {
   markEmailAsVerified,
   resetLoginAttempts,
   setAccountLockout,
+  updateEmailVerificationToken,
   setPasswordResetToken,
   updatePasswordAndClearResetToken,
 } from '../services/user.service.ts';
@@ -121,6 +122,8 @@ export async function handleGoogleCallback(
   }
 }
 
+import { sendVerificationEmail } from '../services/email.service.ts';
+
 export async function register(
   req: RequestWithUser,
   res: Response,
@@ -197,12 +200,22 @@ export async function register(
       });
     }
 
+    if (requiresEmailVerification && verificationToken) {
+      try {
+        await sendVerificationEmail(user.email, verificationToken.rawToken);
+      } catch (e) {
+        console.error(
+          'Failed to send verification email during registration',
+          e,
+        );
+      }
+    }
+
     res.status(201).json({
       message: 'Registration successful. Verify your email to continue.',
       data: {
         user: toAuthUser(user),
         requiresEmailVerification,
-        verificationToken: verificationToken?.rawToken,
       },
     });
   } catch (error) {
@@ -293,11 +306,6 @@ export async function login(
       }
 
       res.status(401).json({ error: 'Invalid credentials' });
-      return;
-    }
-
-    if (!user.emailVerified) {
-      res.status(403).json({ error: 'Email is not verified' });
       return;
     }
 
@@ -643,6 +651,61 @@ export async function logout(
   } catch (error) {
     res.status(500).json({
       error: 'Failed to logout',
+      message: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
+}
+
+export async function resendVerification(
+  req: RequestWithUser,
+  res: Response,
+): Promise<void> {
+  try {
+    const { email } = req.body ?? {};
+
+    if (!assertString(email)) {
+      res.status(400).json({ error: 'email is required' });
+      return;
+    }
+
+    const normalizedEmail = normalizeEmail(email);
+    const user = await findUserByEmail(normalizedEmail);
+
+    if (!user) {
+      // Don't leak if user exists or not, but return generic success
+      res.json({
+        message:
+          'If the account exists and is unverified, a verification email has been sent.',
+      });
+      return;
+    }
+
+    if (user.emailVerified) {
+      res.json({
+        message:
+          'If the account exists and is unverified, a verification email has been sent.',
+      });
+      return;
+    }
+
+    const verificationToken = createEmailVerificationToken();
+
+    await updateEmailVerificationToken(
+      user.id,
+      verificationToken.tokenHash,
+      verificationToken.expiresAt,
+    );
+
+    await sendVerificationEmail(user.email, verificationToken.rawToken);
+
+    res.json({
+      message:
+        'If the account exists and is unverified, a verification email has been sent.',
+    });
+  } catch (error) {
+    console.error('Failed to resend verification:', error);
+    res.status(500).json({
+      error: 'Failed to resend verification email',
       message: error instanceof Error ? error.message : 'Unknown error',
     });
   }

@@ -1,12 +1,59 @@
+import { useState } from 'react';
+import { api } from '../lib/api';
+import { Button } from '../components/ui/Button';
+
 export const LoginPage = () => {
-  const handleLogin = () => {
-    // Redirect to backend Google OAuth endpoint
-    const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:3000';
+  const [isLogin, setIsLogin] = useState(true);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
+
+  const handleGoogleLogin = () => {
+    const apiUrl =
+      import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
     window.location.href = `${apiUrl}/auth/google`;
   };
 
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError('');
+    setSuccessMsg('');
+    setIsLoading(true);
+
+    try {
+      if (isLogin) {
+        const res = await api.post('/auth/login', { email, password });
+        const tokens = res.data.data?.tokens;
+        if (tokens) {
+          localStorage.setItem('auth_token', tokens.accessToken);
+          localStorage.setItem('refresh_token', tokens.refreshToken);
+        }
+        window.location.href = '/dashboard';
+      } else {
+        const res = await api.post('/auth/register', { name, email, password });
+        if (res.data.data?.requiresEmailVerification) {
+          setSuccessMsg(
+            'Registration successful! Please log in and verify your account.',
+          );
+          setIsLogin(true); // Switch to login view
+        } else {
+          setSuccessMsg('Registration successful! You can now log in.');
+          setIsLogin(true);
+        }
+      }
+    } catch (err: any) {
+      const errData = err.response?.data;
+      setError(errData?.error || 'An error occurred');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
       <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-blue-600 mb-2">LearnTube</h1>
@@ -15,9 +62,109 @@ export const LoginPage = () => {
           </p>
         </div>
 
-        <div className="space-y-4">
+        {error && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            {error}
+          </div>
+        )}
+
+        {successMsg && (
+          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
+            {successMsg}
+          </div>
+        )}
+
+        <div className="flex justify-center mb-6 border-b">
           <button
-            onClick={handleLogin}
+            className={`pb-2 px-4 font-medium transition-colors ${
+              isLogin
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+            onClick={() => {
+              setIsLogin(true);
+              setError('');
+              setSuccessMsg('');
+            }}
+          >
+            Sign In
+          </button>
+          <button
+            className={`pb-2 px-4 font-medium transition-colors ${
+              !isLogin
+                ? 'text-blue-600 border-b-2 border-blue-600'
+                : 'text-gray-500 hover:text-gray-700'
+            }`}
+            onClick={() => {
+              setIsLogin(false);
+              setError('');
+              setSuccessMsg('');
+            }}
+          >
+            Sign Up
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {!isLogin && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Name
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                required
+                disabled={isLoading}
+              />
+            </div>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Email
+            </label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+              disabled={isLoading}
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Password
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              required
+              disabled={isLoading}
+            />
+          </div>
+
+          <Button type="submit" className="w-full" isLoading={isLoading}>
+            {isLogin ? 'Sign In' : 'Create Account'}
+          </Button>
+        </form>
+
+        <div className="mt-6 flex items-center justify-between">
+          <hr className="w-full border-gray-300" />
+          <span className="p-2 text-gray-400 text-sm">OR</span>
+          <hr className="w-full border-gray-300" />
+        </div>
+
+        <div className="mt-6 space-y-4">
+          <button
+            onClick={handleGoogleLogin}
+            type="button"
             className="w-full bg-white border-2 border-gray-300 rounded-lg px-6 py-3 flex items-center justify-center gap-3 hover:bg-gray-50 transition-colors"
           >
             <svg className="w-6 h-6" viewBox="0 0 24 24">

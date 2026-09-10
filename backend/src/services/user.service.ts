@@ -257,3 +257,16 @@ export async function setAccountLockout(
 ): Promise<void> {
   await db.update(users).set({ lockoutUntil }).where(eq(users.id, userId));
 }
+export async function updateEmailVerificationToken(
+  userId: string,
+  tokenHash: string,
+  expiresAt: Date
+): Promise<void> {
+  await db
+    .update(users)
+    .set({
+      emailVerificationTokenHash: tokenHash,
+      emailVerificationTokenExpiresAt: expiresAt,
+    })
+    .where(eq(users.id, userId));
+}
