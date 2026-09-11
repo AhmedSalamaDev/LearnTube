@@ -19,12 +19,12 @@ services:
         sync: false
       - key: GOOGLE_CLIENT_SECRET
         sync: false
-      - key: GOOGLE_REDIRECT_URI
-        sync: false
+      - key: GOOGLE_CALLBACK_URL
+        value: https://learntube-yi19.onrender.com/api/v1/auth/google/callback
       - key: YOUTUBE_API_KEY
         sync: false
-      - key: CLIENT_URL
-        sync: false
+      - key: FRONTEND_URL
+        value: https://learntube-orcin.vercel.app
 
 databases:
   - name: learntube-db

@@ -115,7 +115,10 @@ export async function handleGoogleCallback(
       ...readRequestMeta(req),
     });
 
-    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const frontendUrl =
+      process.env.FRONTEND_URL ||
+      process.env.CLIENT_URL ||
+      'http://localhost:5173';
 
     res.redirect(
       `${frontendUrl}/auth/callback?token=${encodeURIComponent(accessToken)}&refreshToken=${encodeURIComponent(issuedRefreshToken.refreshToken)}`,

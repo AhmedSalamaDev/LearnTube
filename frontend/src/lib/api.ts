@@ -1,9 +1,11 @@
 import axios from 'axios';
 
-// Use environment variable for API URL
-// Development: /api/v1 (proxied by Vite to localhost:3000)
-// Production: /api/v1 (served from backend)
-const baseURL = import.meta.env.VITE_API_URL || '/api/v1';
+// Use the Vite proxy locally and the deployed API when no Vercel variable is set.
+export const baseURL =
+  import.meta.env.VITE_API_URL ||
+  (import.meta.env.DEV
+    ? '/api/v1'
+    : 'https://learntube-yi19.onrender.com/api/v1');
 
 export const api = axios.create({
   baseURL,

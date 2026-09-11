@@ -5,6 +5,7 @@ const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || '';
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || '';
 const GOOGLE_CALLBACK_URL =
   process.env.GOOGLE_CALLBACK_URL ||
+  process.env.GOOGLE_REDIRECT_URI ||
   'http://localhost:3000/api/v1/auth/google/callback';
 
 export function configurePassport() {

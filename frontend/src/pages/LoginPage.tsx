@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, Navigate } from 'react-router-dom';
-import { api } from '../lib/api';
+import { api, baseURL } from '../lib/api';
 import { Button } from '../components/ui/Button';
 import { useAuth } from '../hooks/useAuth';
 
@@ -37,9 +37,7 @@ export const LoginPage = () => {
   };
 
   const handleGoogleLogin = () => {
-    const apiUrl =
-      import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
-    window.location.href = `${apiUrl}/auth/google`;
+    window.location.href = `${baseURL}/auth/google`;
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
