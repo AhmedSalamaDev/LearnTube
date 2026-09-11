@@ -139,10 +139,11 @@ export async function updateVideoProgress(
 
   const wasCompleted = existing?.completed || false;
 
-  // Define progress metric: 90% of total duration
   const completionThreshold = video.durationSeconds * 0.9;
   const isCompleted =
-    checkpointSeconds >= completionThreshold || clientIsCompleted;
+    wasCompleted ||
+    checkpointSeconds >= completionThreshold ||
+    clientIsCompleted;
 
   await db.transaction(async (tx) => {
     await tx

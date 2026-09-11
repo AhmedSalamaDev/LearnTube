@@ -24,8 +24,13 @@ export const VideoPlayer = ({
         const response = await api.get(`/activity/progress/${videoId}`);
         const { progress } = response.data;
 
-        if (progress && progress.checkpointSeconds > 0 && playerRef.current) {
-          // Resume from saved checkpoint position
+        if (
+          progress &&
+          progress.checkpointSeconds > 0 &&
+          !progress.completed &&
+          playerRef.current
+        ) {
+          // Resume from saved checkpoint position if not completed
           playerRef.current.seekTo(progress.checkpointSeconds, true);
         }
       } catch (error) {

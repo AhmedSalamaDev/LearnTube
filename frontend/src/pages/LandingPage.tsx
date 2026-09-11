@@ -166,8 +166,22 @@ export const LandingPage = () => {
           </div>
         </section>
       </main>
-      <footer className="border-t border-[var(--lt-border)] px-4 py-8 text-center text-sm text-[var(--lt-muted)]">
-        LearnTube · A focused home for your video learning.
+      <footer className="border-t border-[var(--lt-border)] px-4 py-8 text-center text-sm text-[var(--lt-muted)] flex flex-col items-center gap-4">
+        <div>LearnTube · A focused home for your video learning.</div>
+        <div className="flex gap-4">
+          <Link
+            to="/privacy"
+            className="hover:text-[var(--lt-text)] transition-colors"
+          >
+            Privacy Policy
+          </Link>
+          <Link
+            to="/terms"
+            className="hover:text-[var(--lt-text)] transition-colors"
+          >
+            Terms of Service
+          </Link>
+        </div>
       </footer>
     </div>
   );
