@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { api } from '../../lib/api';
 import { Button } from '../ui/Button';
 
@@ -87,33 +88,25 @@ export const SearchCourseModal = ({
     }
   };
 
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-[var(--lt-background)]/80 px-4 backdrop-blur-md">
       <div
-        className="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 flex flex-col"
+        className="lt-panel flex w-full max-w-3xl flex-col shadow-2xl"
         style={{ maxHeight: '80vh' }}
       >
-        <div className="p-6 border-b">
+        <div className="border-b border-[var(--lt-border)] p-6">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-2xl font-bold">Search YouTube</h2>
+            <h2 className="font-['Plus_Jakarta_Sans'] text-xl font-bold">
+              Search YouTube
+            </h2>
             <button
               onClick={handleClose}
               disabled={isAdding}
-              className="text-gray-500 hover:text-gray-700"
+              className="text-[var(--lt-muted)] hover:text-[var(--lt-text)]"
             >
-              <svg
-                className="w-6 h-6"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
+              <span className="material-symbols-outlined text-[22px]">
+                close
+              </span>
             </button>
           </div>
 
@@ -122,7 +115,7 @@ export const SearchCourseModal = ({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search for videos or playlists..."
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full rounded-lg border border-[var(--lt-border)] bg-[var(--lt-surface)] px-4 py-3 text-sm outline-none focus:border-[var(--lt-primary)]"
             disabled={isAdding}
             autoFocus
           />
@@ -130,7 +123,7 @@ export const SearchCourseModal = ({
 
         <div className="p-6 overflow-y-auto flex-grow">
           {error && (
-            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+            <div className="mb-4 rounded-lg border border-[#93000a] bg-[#93000a]/20 p-3 text-sm text-[var(--lt-rose)]">
               {error}
             </div>
           )}
@@ -144,7 +137,7 @@ export const SearchCourseModal = ({
               {results.map((result) => (
                 <div
                   key={result.id}
-                  className="flex gap-4 border p-4 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex gap-4 rounded-lg border border-[var(--lt-border)] bg-[var(--lt-surface)] p-4 transition hover:bg-[var(--lt-surface-high)]"
                 >
                   <div className="flex-shrink-0 w-32 h-24 relative">
                     <img
@@ -191,6 +184,7 @@ export const SearchCourseModal = ({
           )}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 };

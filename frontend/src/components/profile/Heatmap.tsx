@@ -1,5 +1,5 @@
-import CalendarHeatmap from "react-calendar-heatmap";
-import "react-calendar-heatmap/dist/styles.css";
+import CalendarHeatmap from 'react-calendar-heatmap';
+import 'react-calendar-heatmap/dist/styles.css';
 
 interface HeatmapData {
   date: string;
@@ -9,9 +9,10 @@ interface HeatmapData {
 interface HeatmapProps {
   data: HeatmapData[];
   year: number;
+  onDayClick?: (date: string) => void;
 }
 
-export const Heatmap = ({ data, year }: HeatmapProps) => {
+export const Heatmap = ({ data, year, onDayClick }: HeatmapProps) => {
   // Convert data to format required by react-calendar-heatmap
   const values = data.map((item) => ({
     date: item.date,
@@ -26,49 +27,60 @@ export const Heatmap = ({ data, year }: HeatmapProps) => {
 
   const getColorClass = (value: any) => {
     if (!value || value.count === 0) {
-      return "color-empty";
+      return 'color-empty';
     }
     const percentage = value.count / maxMinutes;
-    if (percentage >= 0.75) return "color-scale-4";
-    if (percentage >= 0.5) return "color-scale-3";
-    if (percentage >= 0.25) return "color-scale-2";
-    return "color-scale-1";
+    if (percentage >= 0.75) return 'color-scale-4';
+    if (percentage >= 0.5) return 'color-scale-3';
+    if (percentage >= 0.25) return 'color-scale-2';
+    return 'color-scale-1';
   };
 
   return (
-    <div className="heatmap-container">
+    <div className="heatmap-container min-w-0 max-w-full overflow-x-auto">
       <style>{`
         .heatmap-container {
-          background: white;
-          padding: 20px;
-          border-radius: 8px;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+          background: var(--lt-surface);
+          padding: 1rem;
+          border: 1px solid var(--lt-border);
+          border-radius: 0.75rem;
         }
         .react-calendar-heatmap {
-          font-size: 12px;
+          min-width: 680px;
+          display: block;
+          max-width: none;
+          color: var(--lt-muted);
+          font-size: 11px;
         }
         .react-calendar-heatmap .color-empty {
-          fill: #ebedf0;
+          fill: var(--lt-surface-highest);
         }
         .react-calendar-heatmap .color-scale-1 {
-          fill: #9be9a8;
+          fill: #315f55;
         }
         .react-calendar-heatmap .color-scale-2 {
-          fill: #40c463;
+          fill: #27826a;
         }
         .react-calendar-heatmap .color-scale-3 {
-          fill: #30a14e;
+          fill: #32b982;
         }
         .react-calendar-heatmap .color-scale-4 {
-          fill: #216e39;
+          fill: var(--lt-green);
         }
         .react-calendar-heatmap text {
           font-size: 10px;
-          fill: #767676;
+          fill: var(--lt-muted);
         }
         .react-calendar-heatmap rect:hover {
-          stroke: #555;
+          stroke: var(--lt-primary);
           stroke-width: 1px;
+        }
+        .react-calendar-heatmap rect {
+          cursor: ${onDayClick ? 'pointer' : 'default'};
+        }
+        .react-calendar-heatmap .month-label,
+        .react-calendar-heatmap .wday {
+          fill: var(--lt-muted);
         }
       `}</style>
 
@@ -78,27 +90,28 @@ export const Heatmap = ({ data, year }: HeatmapProps) => {
         values={values}
         classForValue={getColorClass}
         showWeekdayLabels={true}
+        onClick={(value) => value && onDayClick?.(value.date)}
       />
 
-      <div className="mt-4 flex items-center justify-end gap-2 text-sm text-gray-600">
+      <div className="mt-4 flex items-center justify-end gap-2 text-sm text-[var(--lt-muted)]">
         <span>Less</span>
         <div className="flex gap-1">
-          <div className="w-3 h-3 rounded-sm bg-gray-200"></div>
+          <div className="h-3 w-3 rounded-sm bg-[var(--lt-surface-highest)]"></div>
           <div
-            className="w-3 h-3 rounded-sm"
-            style={{ background: "#9be9a8" }}
+            className="h-3 w-3 rounded-sm"
+            style={{ background: '#315f55' }}
           ></div>
           <div
-            className="w-3 h-3 rounded-sm"
-            style={{ background: "#40c463" }}
+            className="h-3 w-3 rounded-sm"
+            style={{ background: '#27826a' }}
           ></div>
           <div
-            className="w-3 h-3 rounded-sm"
-            style={{ background: "#30a14e" }}
+            className="h-3 w-3 rounded-sm"
+            style={{ background: '#32b982' }}
           ></div>
           <div
-            className="w-3 h-3 rounded-sm"
-            style={{ background: "#216e39" }}
+            className="h-3 w-3 rounded-sm"
+            style={{ background: 'var(--lt-green)' }}
           ></div>
         </div>
         <span>More</span>

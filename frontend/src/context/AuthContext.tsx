@@ -40,11 +40,22 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const checkAuth = useCallback(async (): Promise<boolean> => {
     try {
       console.log('[AuthContext] Checking authentication...');
-      const token = localStorage.getItem('auth_token');
+      let token = localStorage.getItem('auth_token');
+      const refreshToken = localStorage.getItem('refresh_token');
       console.log(
         '[AuthContext] Token in localStorage:',
         token ? 'EXISTS' : 'NOT FOUND',
       );
+
+      if (!token && refreshToken) {
+        const refreshResponse = await api.post('/auth/refresh', {
+          refreshToken,
+        });
+        const tokens = refreshResponse.data.data.tokens;
+        localStorage.setItem('auth_token', tokens.accessToken);
+        localStorage.setItem('refresh_token', tokens.refreshToken);
+        token = tokens.accessToken;
+      }
 
       if (!token) {
         console.log('[AuthContext] No token, skipping API call');
@@ -62,6 +73,7 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
       console.log('[AuthContext] User not authenticated:', error);
       setUser(null);
       localStorage.removeItem('auth_token');
+      localStorage.removeItem('refresh_token');
       setIsLoading(false);
       return false;
     }

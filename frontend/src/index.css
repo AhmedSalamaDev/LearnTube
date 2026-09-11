@@ -1,25 +1,122 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@600;700;800&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,300..700,0..1,0..200');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Global styles */
-body {
-  @apply bg-gray-50 text-gray-900;
+:root {
+  color-scheme: dark;
+  --lt-background: #0f131d;
+  --lt-surface: #171b26;
+  --lt-surface-low: #1c1f2a;
+  --lt-surface-high: #262a35;
+  --lt-surface-highest: #313540;
+  --lt-text: #dfe2f1;
+  --lt-muted: #aaaabd;
+  --lt-primary: #c0c1ff;
+  --lt-primary-strong: #8083ff;
+  --lt-rose: #ffb3b6;
+  --lt-rose-strong: #cc003c;
+  --lt-green: #4edea3;
+  --lt-border: #303441;
 }
 
-/* Custom scrollbar */
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--lt-background);
+  color: var(--lt-text);
+  font-family: Inter, sans-serif;
+  overscroll-behavior: none;
+}
+
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-gray-100;
+  background: var(--lt-background);
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-gray-400 rounded-full;
+  background: var(--lt-surface-highest);
+  border-radius: 999px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-gray-500;
+  background: var(--lt-primary-strong);
+}
+
+@layer components {
+  .lt-page {
+    min-height: 100vh;
+    background: var(--lt-background);
+    color: var(--lt-text);
+  }
+
+  .lt-panel {
+    background: var(--lt-surface-low);
+    border: 1px solid var(--lt-border);
+    border-radius: 0.75rem;
+  }
+
+  .lt-panel-muted {
+    background: var(--lt-surface);
+    border: 1px solid var(--lt-border);
+    border-radius: 0.75rem;
+  }
+
+  .lt-label {
+    color: var(--lt-muted);
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .lt-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  .material-symbols-outlined {
+    font-variation-settings:
+      'FILL' 0,
+      'wght' 500,
+      'GRAD' 0,
+      'opsz' 24;
+  }
+}
+
+/* Keep older feature components on the Atelier palette while they are incrementally migrated. */
+.bg-white {
+  background-color: var(--lt-surface-low) !important;
+}
+.bg-gray-50 {
+  background-color: var(--lt-background) !important;
+}
+.bg-gray-100,
+.bg-gray-200 {
+  background-color: var(--lt-surface-high) !important;
+}
+.text-gray-900,
+.text-gray-800,
+.text-gray-700 {
+  color: var(--lt-text) !important;
+}
+.text-gray-600,
+.text-gray-500,
+.text-gray-400 {
+  color: var(--lt-muted) !important;
+}
+.border-gray-200,
+.border-gray-300 {
+  border-color: var(--lt-border) !important;
+}
+.hover\:bg-gray-50:hover {
+  background-color: var(--lt-surface-high) !important;
 }

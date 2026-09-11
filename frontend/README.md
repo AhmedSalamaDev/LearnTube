@@ -1,186 +1,155 @@
 # LearnTube Frontend
 
-A React + TypeScript frontend for tracking your learning progress from YouTube videos.
+The LearnTube frontend is the React application where people discover courses, watch lessons, and understand their learning progress.
 
-## ✅ Completed Milestones
+It is built with React 18, TypeScript, Vite, Tailwind CSS, React Router, Axios, `react-youtube`, and `react-calendar-heatmap`.
 
-### Milestone 0: Project Setup & Backend Proxy ✅
-
-- ✅ Vite + React + TypeScript setup
-- ✅ Tailwind CSS configuration
-- ✅ Axios API client with `/api` proxy to backend
-- ✅ Basic UI components (Button, Spinner)
-- ✅ Project structure created
-
-**Key Files:**
-
-- `vite.config.ts` - Configured proxy to forward `/api` → `http://localhost:3000`
-- `src/lib/api.ts` - Axios client with `withCredentials: true` for auth cookies
-- `tailwind.config.js` - Tailwind configuration
-
-### Milestone 1: Authentication & Protected Routing ✅
-
-- ✅ AuthContext for global auth state
-- ✅ useAuth hook for easy access to auth
-- ✅ ProtectedLayout wrapper with auth checks
-- ✅ LoginPage with Google OAuth
-- ✅ Navbar with user info and logout
-- ✅ React Router setup with protected routes
-
-**Key Files:**
-
-- `src/context/AuthContext.tsx` - Manages user state, checks `/auth/me`
-- `src/hooks/useAuth.ts` - Hook to access AuthContext
-- `src/components/layout/ProtectedLayout.tsx` - Protects routes, shows spinner while loading
-- `src/components/layout/Navbar.tsx` - Navigation with Dashboard/Profile links
-- `src/pages/LoginPage.tsx` - Google login button
-- `src/App.tsx` - Router configuration
-
-**Routes:**
-
-- `/login` - Public login page
-- `/` - Dashboard (protected)
-- `/profile` - Profile with heatmap (protected)
-- `/course/:id` - Course videos list (protected)
-- `/player/:videoId` - Video player (protected)
-
-## 🚀 Running the App
-
-### Install Dependencies
+## Start the Frontend
 
 ```bash
 npm install
-```
-
-### Start Development Server
-
-```bash
 npm run dev
 ```
 
-The app will run on `http://localhost:5173`
+The development server runs at `http://localhost:5173`.
 
-### Backend Requirements
+The Vite development proxy sends `/api` requests to `http://localhost:3000`. To use a different API origin, set:
 
-Your backend must be running on `http://localhost:3000` with these endpoints:
-
-- `GET /auth/google` - Initiates Google OAuth
-- `GET /auth/me` - Returns current user
-- `POST /auth/logout` - Logs out user
-
-## 📁 Project Structure
-
-```
-src/
-├── components/
-│   ├── dashboard/        # Dashboard-specific components
-│   ├── layout/
-│   │   ├── Navbar.tsx           ✅ Complete
-│   │   └── ProtectedLayout.tsx  ✅ Complete
-│   ├── player/           # Video player components
-│   ├── profile/          # Profile page components
-│   └── ui/
-│       ├── Button.tsx            ✅ Complete
-│       └── Spinner.tsx           ✅ Complete
-├── context/
-│   └── AuthContext.tsx           ✅ Complete
-├── hooks/
-│   └── useAuth.ts                ✅ Complete
-├── lib/
-│   └── api.ts                    ✅ Complete
-├── pages/
-│   ├── DashboardPage.tsx         ✅ Basic structure
-│   ├── ProfilePage.tsx           ✅ Basic structure
-│   ├── CoursePage.tsx            ✅ Basic structure
-│   ├── PlayerPage.tsx            ✅ Basic structure
-│   └── LoginPage.tsx             ✅ Complete
-├── App.tsx                       ✅ Complete
-├── main.tsx                      ✅ Complete
-└── index.css                     ✅ Complete
+```env
+VITE_API_URL=https://your-api.example.com/api/v1
 ```
 
-## 🧪 Testing Milestone 1
+Build and preview the production bundle with:
 
-### Test Authentication Flow:
+```bash
+npm run build
+npm run preview
+```
 
-1. Start the backend server on port 3000
-2. Start frontend: `npm run dev`
-3. Navigate to `http://localhost:5173`
-4. You should be redirected to `/login`
-5. Click "Continue with Google"
-6. After Google auth, you should land on Dashboard
-7. Check React DevTools - AuthContext should show your user info
-8. Test navigation between Dashboard and Profile
-9. Click Logout - should return to login page
+Lint the project with:
 
-## 🎯 Next Steps: Milestone 2
+```bash
+npm run lint
+```
 
-### What's Next:
+## Routes
 
-- [ ] Implement DashboardPage with course list
-- [ ] Create CourseCard component
-- [ ] Add "Add Course" modal
-- [ ] Implement ProfilePage with activity heatmap
-- [ ] Create Heatmap component
-- [ ] Fetch and display course progress data
+### Public routes
 
-### API Endpoints Needed:
+| Route              | Purpose                                  |
+| ------------------ | ---------------------------------------- |
+| `/`                | Public LearnTube landing page            |
+| `/login`           | Login and registration                   |
+| `/auth/callback`   | Google OAuth callback handling           |
+| `/verify-email`    | Email verification                       |
+| `/forgot-password` | Request a password-reset email           |
+| `/reset-password`  | Set a new password from an emailed token |
 
-- `GET /courses` - List all user's courses
-- `POST /courses` - Create course from YouTube URL
-- `GET /activity/heatmap?year=2025` - Get heatmap data
+### Protected routes
 
-## 🛠️ Tech Stack
+| Route                              | Purpose                                                            |
+| ---------------------------------- | ------------------------------------------------------------------ |
+| `/dashboard`                       | Course library and resume-learning card                            |
+| `/analytics`                       | Detailed watch-time, heatmap, daily activity, and course analytics |
+| `/profile`                         | Account details and basic learning summary                         |
+| `/profile/security`                | Set or change a local password                                     |
+| `/course/:id`                      | Course overview, progress, video list, sync, and removal           |
+| `/course/:courseId/video/:videoId` | YouTube player and course playlist                                 |
 
-- **React 18** - UI library
-- **TypeScript** - Type safety
-- **Vite** - Build tool
-- **React Router v6** - Routing
-- **Axios** - HTTP client
-- **Tailwind CSS** - Styling
-- **react-youtube** - YouTube player (for Milestone 4)
-- **react-calendar-heatmap** - Activity heatmap (for Milestone 2)
+Protected pages are wrapped by `ProtectedLayout`. Users without a verified email see the verification prompt instead of course content.
 
-## 📝 Notes
+## Main Features
 
 ### Authentication
 
-- Uses cookies for auth (not localStorage tokens)
-- Backend redirects to `http://localhost:5173/auth/callback?token=<JWT>` after Google OAuth
-- AuthContext automatically checks `/auth/me` on mount
-- All API calls include `withCredentials: true` to send cookies
+- Local email/password login and registration
+- Google OAuth
+- Email verification
+- Password recovery and reset
+- Password set/change for authenticated users
+- Access-token refresh with refresh-token rotation
+- Logout with refresh-token revocation
 
-### Proxy Configuration
+Access and refresh tokens are stored in browser local storage. The Axios client adds the access token to requests and retries an expired authenticated request once after rotating the refresh token.
 
-All `/api/*` requests are proxied to `http://localhost:3000`
-Example: `api.get('/courses')` → `http://localhost:3000/courses`
+### Course dashboard
 
-### Error Handling
+The dashboard can:
 
-- 401 responses automatically redirect to `/login`
-- Loading states handled by Spinner component
-- Protected routes show Spinner while checking auth
+- Load the user's courses
+- Calculate course progress from existing progress endpoints
+- Identify the latest watched course for the resume card
+- Search YouTube
+- Add a video or playlist by URL
+- Filter courses by all, in-progress, or completed
+- Remove a course from the user's library
 
-## 🔧 Environment Variables
+### Course and player flow
 
-Currently using hardcoded URLs:
+The course page shows:
 
-- Frontend: `http://localhost:5173`
-- Backend: `http://localhost:3000`
+- Course metadata
+- Total duration
+- Watched progress
+- Completed video count
+- Video list
+- Playlist synchronization
+- Mark-complete actions
+- Course removal
 
-TODO: Move to environment variables in production.
+The player shows the YouTube video and the rest of the playlist. Playback checkpoints, watch activity, and completion state are sent to the backend.
 
-## 📦 Ready to Commit
+### Analytics and profile
 
-Once you verify everything works:
+`/analytics` uses the existing activity endpoints to show:
 
-```bash
-git add .
-git commit -m "feat: complete Milestone 0 & 1 - project setup and authentication"
+- Total watch time
+- Active study days
+- Completed videos
+- Longest activity streak calculated from heatmap data
+- Average course progress
+- Annual activity heatmap
+- Clickable daily activity details
+- Course-by-course performance
+
+`/profile` stays intentionally lighter and focuses on account information, basic totals, password settings, and logout.
+
+## Frontend Structure
+
+```text
+src/
+├── components/
+│   ├── course/       Course video rows
+│   ├── dashboard/    Course cards, import, and search modals
+│   ├── layout/       Navigation and protected layout
+│   ├── player/       YouTube player and activity tracking
+│   ├── profile/      Heatmap presentation
+│   └── ui/           Shared buttons and loading states
+├── context/          Global authentication state
+├── hooks/            React hooks such as useAuth
+├── lib/              Axios API client
+├── pages/            Route-level screens
+├── App.tsx           Router configuration
+└── index.css         Atelier theme and global styles
 ```
 
----
+## Backend Contract Used by the Frontend
 
-**Status:** ✅ Milestones 0 & 1 Complete  
-**Next:** Milestone 2 - Dashboard & Profile Pages  
-**Last Updated:** October 29, 2025
+The frontend calls the backend under `/api/v1`.
+
+- Authentication: `/auth/login`, `/auth/register`, `/auth/google`, `/auth/me`, `/auth/refresh`, `/auth/logout`, `/auth/verify-email`, `/auth/forgot-password`, `/auth/reset-password`, `/auth/set-password`, `/auth/change-password`
+- Courses: `/courses`, `/courses/search`, `/courses/:id`, `/courses/:id/sync`
+- Activity: `/activity/log`, `/activity/progress/:videoId`, `/activity/course-progress/:courseId`, `/activity/heatmap`, `/activity/day-activity`, `/activity/dashboard`
+
+See [backend/README.md](../backend/README.md) for the backend setup and endpoint details.
+
+## Design Direction
+
+The current interface uses the LearnTube Atelier style:
+
+- Dark navy surfaces for long study sessions
+- Violet primary accents for navigation and actions
+- Rose accents for important actions and destructive states
+- Green accents for progress and completion
+- Plus Jakarta Sans for headings, Inter for interface text, and JetBrains Mono for timing and metrics
+- Responsive layouts for desktop and mobile

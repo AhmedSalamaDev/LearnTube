@@ -54,6 +54,11 @@ export const CoursePage = () => {
   const [progress, setProgress] = useState<CourseProgress | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSyncing, setIsSyncing] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [confirmingDelete, setConfirmingDelete] = useState(false);
+  const [completingVideoId, setCompletingVideoId] = useState<string | null>(
+    null,
+  );
 
   useEffect(() => {
     const fetchCourse = async () => {
@@ -94,6 +99,61 @@ export const CoursePage = () => {
       alert('Failed to sync course. Check console for details.');
     } finally {
       setIsSyncing(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!confirmingDelete) {
+      setConfirmingDelete(true);
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      await api.delete(`/courses/${course?.id}`);
+      window.location.href = '/dashboard';
+    } finally {
+      setIsDeleting(false);
+      setConfirmingDelete(false);
+    }
+  };
+
+  const handleComplete = async (video: Video) => {
+    setCompletingVideoId(video.id);
+    try {
+      await api.patch(`/activity/progress/${video.id}`, {
+        checkpointSeconds: video.durationSeconds,
+        isCompleted: true,
+      });
+      setProgress((current) =>
+        current
+          ? {
+              ...current,
+              completedVideos: Math.min(
+                current.totalVideos,
+                current.completedVideos +
+                  (progressMap.get(video.id)?.completed ? 0 : 1),
+              ),
+              videoProgress: [
+                ...current.videoProgress.filter(
+                  (item) => item.videoId !== video.id,
+                ),
+                {
+                  userId: '',
+                  videoId: video.id,
+                  checkpointSeconds: video.durationSeconds,
+                  totalWatchedSeconds: video.durationSeconds,
+                  completed: true,
+                  lastWatchedAt: new Date().toISOString(),
+                },
+              ],
+            }
+          : current,
+      );
+    } catch (error) {
+      console.error('Failed to mark video complete:', error);
+    } finally {
+      setCompletingVideoId(null);
     }
   };
 
@@ -138,11 +198,11 @@ export const CoursePage = () => {
     course.youtubePlaylistId && !course.youtubePlaylistId.startsWith('video_');
 
   return (
-    <div className="max-w-6xl mx-auto">
+    <div className="mx-auto w-full max-w-6xl space-y-6 overflow-hidden">
       {/* Back button */}
       <Link
         to="/dashboard"
-        className="inline-flex items-center text-gray-600 hover:text-gray-900 mb-4"
+        className="inline-flex max-w-full items-center text-gray-600 hover:text-gray-900 mb-4"
       >
         <svg
           className="w-5 h-5 mr-1"
@@ -161,10 +221,10 @@ export const CoursePage = () => {
       </Link>
 
       {/* Course Header */}
-      <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
-        <div className="flex gap-6">
+      <div className="lt-panel p-4 shadow-xl sm:p-6">
+        <div className="flex min-w-0 flex-col gap-5 lg:flex-row lg:gap-6">
           {/* Thumbnail */}
-          <div className="flex-shrink-0 w-80 aspect-video bg-gray-200 rounded-lg overflow-hidden">
+          <div className="aspect-video w-full flex-shrink-0 overflow-hidden rounded-lg bg-gray-200 lg:w-80">
             {course.thumbnailUrl ? (
               <img
                 src={course.thumbnailUrl}
@@ -191,40 +251,58 @@ export const CoursePage = () => {
           </div>
 
           {/* Info */}
-          <div className="flex-1">
-            <div className="flex justify-between items-start mb-2">
-              <h1 className="text-3xl font-bold text-gray-900">
+          <div className="min-w-0 flex-1">
+            <div className="mb-4 flex min-w-0 flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <h1 className="min-w-0 break-words font-['Plus_Jakarta_Sans'] text-2xl font-bold leading-tight text-gray-900 sm:text-3xl">
                 {course.title}
               </h1>
-              {isPlaylist && (
-                <button
-                  onClick={handleSync}
-                  disabled={isSyncing}
-                  className="inline-flex items-center gap-2 px-3 py-1.5 text-sm font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 focus:ring-2 focus:ring-blue-500 focus:outline-none disabled:opacity-50 transition-colors"
-                >
-                  <svg
-                    className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
+              <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:justify-end">
+                {isPlaylist && (
+                  <button
+                    onClick={handleSync}
+                    disabled={isSyncing}
+                    className="inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-[var(--lt-border)] bg-[var(--lt-surface-high)] px-3 py-1.5 text-sm font-medium text-[var(--lt-primary)] hover:bg-[var(--lt-surface-highest)] disabled:opacity-50 sm:flex-none"
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                    />
-                  </svg>
-                  {isSyncing ? 'Syncing...' : 'Sync Playlist'}
+                    <svg
+                      className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+                      />
+                    </svg>
+                    {isSyncing ? 'Syncing...' : 'Sync Playlist'}
+                  </button>
+                )}
+                <button
+                  onClick={handleDelete}
+                  disabled={isDeleting}
+                  className="inline-flex min-h-10 flex-1 items-center justify-center gap-2 rounded-lg border border-[#93000a] bg-[#93000a]/15 px-3 py-1.5 text-sm font-medium text-[var(--lt-rose)] hover:bg-[#93000a]/30 disabled:opacity-50 sm:flex-none"
+                >
+                  <span className="material-symbols-outlined text-[18px]">
+                    delete
+                  </span>
+                  {confirmingDelete
+                    ? 'Confirm remove'
+                    : isDeleting
+                      ? 'Removing...'
+                      : 'Remove course'}
                 </button>
-              )}
+              </div>
             </div>
 
             {course.describtion && (
-              <p className="text-gray-600 mb-4">{course.describtion}</p>
+              <p className="mb-4 break-words text-gray-600">
+                {course.describtion}
+              </p>
             )}
 
-            <div className="flex items-center gap-6 text-sm text-gray-600 mb-4">
+            <div className="mb-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm text-gray-600">
               <span>{course.videos.length} videos</span>
               <span>{formatDuration(course.totalDurationSeconds)} total</span>
               <span>
@@ -251,9 +329,11 @@ export const CoursePage = () => {
       </div>
 
       {/* Video List */}
-      <div className="bg-white rounded-lg shadow-sm">
-        <div className="p-4 border-b border-gray-200">
-          <h2 className="text-xl font-bold text-gray-900">Course Content</h2>
+      <div className="lt-panel overflow-hidden shadow-xl">
+        <div className="border-b border-gray-200 p-4 sm:p-5">
+          <h2 className="font-['Plus_Jakarta_Sans'] text-xl font-bold text-gray-900">
+            Course Content
+          </h2>
         </div>
 
         <div className="divide-y divide-gray-100">
@@ -271,6 +351,8 @@ export const CoursePage = () => {
                 order={video.order}
                 totalWatchedSeconds={videoProgress?.totalWatchedSeconds || 0}
                 completed={videoProgress?.completed || false}
+                onComplete={() => handleComplete(video)}
+                isCompleting={completingVideoId === video.id}
               />
             );
           })}

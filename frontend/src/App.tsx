@@ -11,6 +11,8 @@ import { PlayerPage } from './pages/PlayerPage';
 import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
 import { ResetPasswordPage } from './pages/ResetPasswordPage';
 import { AccountSecurityPage } from './pages/AccountSecurityPage';
+import { LandingPage } from './pages/LandingPage';
+import { AnalyticsPage } from './pages/AnalyticsPage';
 
 function App() {
   return (
@@ -22,10 +24,11 @@ function App() {
           <Route path="/verify-email" element={<VerifyEmailPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/" element={<LandingPage />} />
 
           <Route element={<ProtectedLayout />}>
-            <Route path="/" element={<DashboardPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/analytics" element={<AnalyticsPage />} />
             <Route path="/profile" element={<ProfilePage />} />
             <Route path="/profile/security" element={<AccountSecurityPage />} />
             <Route path="/course/:id" element={<CoursePage />} />

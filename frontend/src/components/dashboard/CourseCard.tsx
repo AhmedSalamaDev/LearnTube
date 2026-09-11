@@ -1,6 +1,6 @@
-import { Link } from "react-router-dom";
-import { useState } from "react";
-import { api } from "../../lib/api";
+import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { api } from '../../lib/api';
 
 interface CourseCardProps {
   id: string;
@@ -13,6 +13,12 @@ interface CourseCardProps {
   onDelete?: () => void;
 }
 
+const formatDuration = (seconds: number) => {
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+};
+
 export const CourseCard = ({
   id,
   title,
@@ -24,141 +30,82 @@ export const CourseCard = ({
   onDelete,
 }: CourseCardProps) => {
   const [isDeleting, setIsDeleting] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-
-  const formatDuration = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    if (hours > 0) {
-      return `${hours}h ${minutes}m`;
+  const [confirming, setConfirming] = useState(false);
+  const handleDelete = async (event: React.MouseEvent) => {
+    event.preventDefault();
+    if (!confirming) {
+      setConfirming(true);
+      return;
     }
-    return `${minutes}m`;
-  };
-
-  const handleDeleteClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setShowDeleteConfirm(true);
-  };
-
-  const handleConfirmDelete = async (e: React.MouseEvent) => {
-    e.preventDefault();
     setIsDeleting(true);
     try {
       await api.delete(`/courses/${id}`);
       onDelete?.();
-    } catch (error) {
-      console.error("Failed to delete course:", error);
-      setShowDeleteConfirm(false);
+    } finally {
       setIsDeleting(false);
+      setConfirming(false);
     }
   };
-
-  const handleCancelDelete = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setShowDeleteConfirm(false);
-  };
-
   return (
-    <Link to={`/course/${id}`} className="block group h-full">
-      <div className="bg-white rounded-lg shadow-sm hover:shadow-md transition-shadow overflow-hidden h-full flex flex-col">
-        {/* Thumbnail */}
-        <div className="relative aspect-video bg-gray-200 flex-shrink-0 overflow-hidden">
+    <Link to={`/course/${id}`} className="group block h-full">
+      <article className="flex h-full flex-col overflow-hidden rounded-xl border border-[var(--lt-border)] bg-[var(--lt-surface-low)] transition hover:-translate-y-0.5 hover:border-[var(--lt-primary-strong)] hover:shadow-xl hover:shadow-black/20">
+        <div className="relative aspect-video overflow-hidden bg-[var(--lt-surface)]">
           {thumbnailUrl ? (
             <img
               src={thumbnailUrl}
               alt={title}
-              className="w-full h-full object-cover"
+              className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
             />
           ) : (
-            <div className="w-full h-full flex items-center justify-center text-gray-400">
-              <svg
-                className="w-16 h-16"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"
-                />
-              </svg>
+            <div className="flex h-full items-center justify-center">
+              <span className="material-symbols-outlined text-5xl text-[var(--lt-primary)]">
+                school
+              </span>
             </div>
           )}
-
-          {/* Duration badge */}
-          <div className="absolute bottom-2 right-2 bg-black bg-opacity-75 text-white text-xs px-2 py-1 rounded">
+          <div className="absolute inset-x-0 bottom-0 h-20 bg-gradient-to-t from-[var(--lt-surface-low)] to-transparent" />
+          <span className="lt-mono absolute bottom-3 right-3 rounded bg-[var(--lt-background)]/85 px-2 py-1 text-xs">
             {formatDuration(totalDurationSeconds)}
-          </div>
+          </span>
         </div>
-
-        {/* Content */}
-        <div className="p-3 flex-1 flex flex-col">
-          <h3 className="font-semibold text-base text-gray-900 group-hover:text-blue-600 transition-colors mb-1.5 line-clamp-1">
-            {title}
-          </h3>
-
+        <div className="flex flex-1 flex-col p-4">
+          <div className="flex items-start justify-between gap-3">
+            <h3 className="line-clamp-2 font-['Plus_Jakarta_Sans'] font-bold text-[var(--lt-text)] transition group-hover:text-[var(--lt-primary)]">
+              {title}
+            </h3>
+            <span className="lt-mono shrink-0 text-xs text-[var(--lt-green)]">
+              {Math.round(progressPercentage)}%
+            </span>
+          </div>
           {description && (
-            <p className="text-xs text-gray-600 mb-2 line-clamp-1">
+            <p className="mt-2 line-clamp-2 text-xs leading-5 text-[var(--lt-muted)]">
               {description}
             </p>
           )}
-
-          {/* Spacer to push progress and stats to bottom */}
-          <div className="flex-1"></div>
-
-          {/* Progress Bar */}
-          <div className="mb-2">
-            <div className="flex justify-between text-xs text-gray-600 mb-1">
-              <span>Progress</span>
-              <span>{Math.round(progressPercentage)}%</span>
-            </div>
-            <div className="w-full bg-gray-200 rounded-full h-1.5">
+          <div className="mt-auto pt-5">
+            <div className="mb-2 h-1.5 rounded-full bg-[var(--lt-surface-highest)]">
               <div
-                className="bg-blue-600 h-1.5 rounded-full transition-all"
-                style={{ width: `${progressPercentage}%` }}
+                className="h-full rounded-full bg-[var(--lt-green)]"
+                style={{ width: `${Math.min(100, progressPercentage)}%` }}
               />
             </div>
-          </div>
-
-          {/* Stats and Delete */}
-          {!showDeleteConfirm ? (
-            <div className="flex items-center justify-between text-xs text-gray-500">
+            <div className="flex items-center justify-between text-xs text-[var(--lt-muted)]">
               <span>{formatDuration(totalWatchedSeconds)} watched</span>
-
-              {/* Delete button */}
               <button
-                onClick={handleDeleteClick}
+                onClick={handleDelete}
                 disabled={isDeleting}
-                className="text-red-600 hover:text-red-700 disabled:opacity-50 text-xs"
+                className={`font-semibold ${confirming ? 'text-[var(--lt-rose)]' : 'text-[var(--lt-muted)] hover:text-[var(--lt-rose)]'}`}
               >
-                Delete
+                {confirming
+                  ? 'Confirm remove'
+                  : isDeleting
+                    ? 'Removing...'
+                    : 'Remove'}
               </button>
             </div>
-          ) : (
-            <div className="flex items-center justify-between text-xs">
-              <span className="text-red-600 font-medium">Delete course?</span>
-              <div className="flex gap-2">
-                <button
-                  onClick={handleCancelDelete}
-                  disabled={isDeleting}
-                  className="px-2 py-1 text-gray-600 hover:text-gray-900 disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleConfirmDelete}
-                  disabled={isDeleting}
-                  className="px-2 py-1 bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50"
-                >
-                  {isDeleting ? "Deleting..." : "Confirm"}
-                </button>
-              </div>
-            </div>
-          )}
+          </div>
         </div>
-      </div>
+      </article>
     </Link>
   );
 };

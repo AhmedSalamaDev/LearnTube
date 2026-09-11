@@ -1,9 +1,19 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import { api } from '../lib/api';
 import { Button } from '../components/ui/Button';
+import { useAuth } from '../hooks/useAuth';
+
+const passwordRules = [
+  ['10 characters minimum', (value: string) => value.length >= 10],
+  ['One uppercase letter', (value: string) => /[A-Z]/.test(value)],
+  ['One lowercase letter', (value: string) => /[a-z]/.test(value)],
+  ['One number', (value: string) => /[0-9]/.test(value)],
+  ['One symbol', (value: string) => /[^A-Za-z0-9]/.test(value)],
+] as const;
 
 export const LoginPage = () => {
+  const { user, isLoading: isAuthLoading } = useAuth();
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -12,174 +22,227 @@ export const LoginPage = () => {
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
+  if (isAuthLoading) {
+    return <div className="lt-page min-h-screen" />;
+  }
+
+  if (user) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  const selectMode = (loginMode: boolean) => {
+    setIsLogin(loginMode);
+    setError('');
+    setSuccessMsg('');
+  };
+
   const handleGoogleLogin = () => {
     const apiUrl =
       import.meta.env.VITE_API_URL || 'http://localhost:3000/api/v1';
     window.location.href = `${apiUrl}/auth/google`;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     setError('');
     setSuccessMsg('');
     setIsLoading(true);
 
     try {
       if (isLogin) {
-        const res = await api.post('/auth/login', { email, password });
-        const tokens = res.data.data?.tokens;
+        const response = await api.post('/auth/login', { email, password });
+        const tokens = response.data.data?.tokens;
         if (tokens) {
           localStorage.setItem('auth_token', tokens.accessToken);
           localStorage.setItem('refresh_token', tokens.refreshToken);
         }
         window.location.href = '/dashboard';
       } else {
-        const res = await api.post('/auth/register', { name, email, password });
-        if (res.data.data?.requiresEmailVerification) {
-          setSuccessMsg(
-            'Registration successful! Please log in and verify your account.',
-          );
-          setIsLogin(true); // Switch to login view
-        } else {
-          setSuccessMsg('Registration successful! You can now log in.');
-          setIsLogin(true);
-        }
+        const response = await api.post('/auth/register', {
+          name,
+          email,
+          password,
+        });
+        setSuccessMsg(
+          response.data.data?.requiresEmailVerification
+            ? 'Account created. Check your email to verify your account, then sign in.'
+            : 'Account created. You can sign in now.',
+        );
+        setIsLogin(true);
+        setPassword('');
       }
-    } catch (err: any) {
-      const errData = err.response?.data;
-      setError(errData?.error || 'An error occurred');
+    } catch (requestError: any) {
+      const response = requestError.response?.data;
+      setError(
+        response?.details?.join(' ') ||
+          response?.error ||
+          'Something went wrong. Please try again.',
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-indigo-100 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full">
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-blue-600 mb-2">LearnTube</h1>
-          <p className="text-gray-600">
-            Learn from YouTube, Track Your Progress
-          </p>
-        </div>
-
-        {error && (
-          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-            {error}
-          </div>
-        )}
-
-        {successMsg && (
-          <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
-            {successMsg}
-          </div>
-        )}
-
-        <div className="flex justify-center mb-6 border-b">
-          <button
-            className={`pb-2 px-4 font-medium transition-colors ${
-              isLogin
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-            onClick={() => {
-              setIsLogin(true);
-              setError('');
-              setSuccessMsg('');
-            }}
+    <div className="lt-page relative flex min-h-screen flex-col overflow-hidden">
+      <div className="pointer-events-none absolute left-1/2 top-0 h-[28rem] w-[42rem] -translate-x-1/2 rounded-full bg-[var(--lt-primary-strong)]/10 blur-3xl" />
+      <header className="relative z-10 border-b border-[var(--lt-border)] bg-[rgba(15,19,29,0.78)] backdrop-blur-xl">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          <Link to="/" className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-[26px] text-[var(--lt-primary)]">
+              school
+            </span>
+            <span className="font-['Plus_Jakarta_Sans'] text-xl font-bold tracking-tight">
+              Learn<span className="text-[var(--lt-primary)]">Tube</span>
+            </span>
+          </Link>
+          <Link
+            to="/"
+            className="flex items-center gap-1 text-sm font-semibold text-[var(--lt-muted)] hover:text-[var(--lt-text)]"
           >
-            Sign In
-          </button>
-          <button
-            className={`pb-2 px-4 font-medium transition-colors ${
-              !isLogin
-                ? 'text-blue-600 border-b-2 border-blue-600'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-            onClick={() => {
-              setIsLogin(false);
-              setError('');
-              setSuccessMsg('');
-            }}
-          >
-            Sign Up
-          </button>
+            <span className="material-symbols-outlined text-[18px]">
+              arrow_back
+            </span>
+            Back home
+          </Link>
         </div>
+      </header>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          {!isLogin && (
+      <main className="relative z-10 mx-auto flex w-full max-w-4xl flex-1 items-center justify-center px-4 py-20 sm:px-6 lg:py-28">
+        <section className="lt-panel w-full max-w-xl p-7 shadow-2xl sm:p-10">
+          <div className="mb-8 flex flex-col gap-5">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Name
-              </label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                required
-                disabled={isLoading}
-              />
+              <div className="lt-label mb-2 text-[var(--lt-primary)]">
+                Welcome back
+              </div>
+              <h2 className="font-['Plus_Jakarta_Sans'] text-2xl font-bold">
+                {isLogin ? 'Sign in to LearnTube' : 'Create your account'}
+              </h2>
+              <p className="mt-2 text-sm text-[var(--lt-muted)]">
+                {isLogin
+                  ? 'Pick up your learning where you left off.'
+                  : 'Start building a calmer learning library.'}
+              </p>
+            </div>
+            <div className="flex w-full rounded-lg bg-[var(--lt-surface)] p-1">
+              <button
+                type="button"
+                onClick={() => selectMode(true)}
+                className={`flex-1 rounded-md px-3 py-2.5 text-xs font-bold ${isLogin ? 'bg-[var(--lt-surface-high)] text-[var(--lt-primary)]' : 'text-[var(--lt-muted)]'}`}
+              >
+                Sign in
+              </button>
+              <button
+                type="button"
+                onClick={() => selectMode(false)}
+                className={`flex-1 rounded-md px-3 py-2.5 text-xs font-bold ${!isLogin ? 'bg-[var(--lt-surface-high)] text-[var(--lt-primary)]' : 'text-[var(--lt-muted)]'}`}
+              >
+                Create account
+              </button>
+            </div>
+          </div>
+
+          {error && (
+            <div className="mb-5 rounded-lg border border-[#93000a] bg-[#93000a]/20 p-3 text-sm text-[var(--lt-rose)]">
+              {error}
+            </div>
+          )}
+          {successMsg && (
+            <div className="mb-5 rounded-lg border border-[var(--lt-green)]/30 bg-[var(--lt-green)]/10 p-3 text-sm text-[var(--lt-green)]">
+              {successMsg}
             </div>
           )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {!isLogin && (
+              <label className="block text-sm font-semibold">
+                Name
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  className="mt-2 w-full rounded-lg border border-[var(--lt-border)] bg-[var(--lt-surface)] px-4 py-3 font-normal outline-none focus:border-[var(--lt-primary)]"
+                  required
+                  disabled={isLoading}
+                  placeholder="Your name"
+                />
+              </label>
+            )}
+            <label className="block text-sm font-semibold">
               Email
+              <input
+                type="email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                className="mt-2 w-full rounded-lg border border-[var(--lt-border)] bg-[var(--lt-surface)] px-4 py-3 font-normal outline-none focus:border-[var(--lt-primary)]"
+                required
+                disabled={isLoading}
+                placeholder="you@example.com"
+              />
             </label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              required
-              disabled={isLoading}
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-semibold">
               Password
+              <input
+                type="password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                className="mt-2 w-full rounded-lg border border-[var(--lt-border)] bg-[var(--lt-surface)] px-4 py-3 font-normal outline-none focus:border-[var(--lt-primary)]"
+                required
+                disabled={isLoading}
+                placeholder="Enter your password"
+              />
             </label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              required
-              disabled={isLoading}
-            />
-          </div>
+            {!isLogin && (
+              <div className="rounded-lg bg-[var(--lt-surface)] p-4">
+                <div className="lt-label mb-3">Password requirements</div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {passwordRules.map(([label, test]) => (
+                    <span
+                      key={label}
+                      className={`flex items-center gap-1 text-xs ${test(password) ? 'text-[var(--lt-green)]' : 'text-[var(--lt-muted)]'}`}
+                    >
+                      <span className="material-symbols-outlined text-[15px]">
+                        {test(password)
+                          ? 'check_circle'
+                          : 'radio_button_unchecked'}
+                      </span>
+                      {label}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            <Button
+              type="submit"
+              className="!w-full !rounded-lg !bg-[var(--lt-primary)] !py-3.5 !font-bold !text-[#171b26] hover:!bg-[var(--lt-primary-strong)]"
+              isLoading={isLoading}
+            >
+              {isLogin ? 'Sign in' : 'Create account'}
+              <span className="material-symbols-outlined ml-2 align-middle text-[18px]">
+                arrow_forward
+              </span>
+            </Button>
+          </form>
 
-          <Button type="submit" className="w-full" isLoading={isLoading}>
-            {isLogin ? 'Sign In' : 'Create Account'}
-          </Button>
-        </form>
-
-        {isLogin && (
-          <div className="mt-4 text-center">
+          {isLogin && (
             <Link
               to="/forgot-password"
-              className="text-sm text-blue-600 hover:text-blue-700"
+              className="mt-5 block text-center text-sm font-semibold text-[var(--lt-primary)] hover:underline"
             >
               Forgot your password?
             </Link>
+          )}
+          <div className="my-7 flex items-center gap-3 text-xs uppercase tracking-widest text-[var(--lt-muted)]">
+            <span className="h-px flex-1 bg-[var(--lt-border)]" />
+            or continue with
+            <span className="h-px flex-1 bg-[var(--lt-border)]" />
           </div>
-        )}
-
-        <div className="mt-6 flex items-center justify-between">
-          <hr className="w-full border-gray-300" />
-          <span className="p-2 text-gray-400 text-sm">OR</span>
-          <hr className="w-full border-gray-300" />
-        </div>
-
-        <div className="mt-6 space-y-4">
           <button
-            onClick={handleGoogleLogin}
             type="button"
-            className="w-full bg-white border-2 border-gray-300 rounded-lg px-6 py-3 flex items-center justify-center gap-3 hover:bg-gray-50 transition-colors"
+            onClick={handleGoogleLogin}
+            className="flex w-full items-center justify-center gap-3 rounded-lg border border-[var(--lt-border)] bg-[var(--lt-surface-high)] px-4 py-3 text-sm font-semibold hover:bg-[var(--lt-surface-highest)]"
           >
-            <svg className="w-6 h-6" viewBox="0 0 24 24">
+            <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
               <path
                 fill="#4285F4"
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -197,16 +260,14 @@ export const LoginPage = () => {
                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
               />
             </svg>
-            <span className="font-medium text-gray-700">
-              Continue with Google
-            </span>
+            Continue with Google
           </button>
-        </div>
-
-        <div className="mt-8 text-center text-sm text-gray-500">
-          <p>By continuing, you agree to our Terms of Service</p>
-        </div>
-      </div>
+          <p className="mt-7 text-center text-xs leading-5 text-[var(--lt-muted)]">
+            By continuing, you agree to use LearnTube as your focused learning
+            workspace.
+          </p>
+        </section>
+      </main>
     </div>
   );
 };

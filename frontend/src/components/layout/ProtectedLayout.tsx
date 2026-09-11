@@ -40,12 +40,12 @@ export const ProtectedLayout = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="lt-page">
       <Navbar />
-      <main className="container mx-auto px-4 py-8">
+      <main className="mx-auto max-w-[1520px] px-4 py-6 sm:px-6 lg:px-8">
         {!user.emailVerified ? (
-          <div className="max-w-md mx-auto mt-12 bg-white p-8 rounded-xl shadow-md text-center">
-            <div className="w-16 h-16 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-6">
+          <div className="lt-panel mx-auto mt-12 max-w-md p-8 text-center shadow-2xl">
+            <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-[var(--lt-primary)]/15 text-[var(--lt-primary)]">
               <svg
                 className="w-8 h-8"
                 fill="none"
@@ -60,13 +60,15 @@ export const ProtectedLayout = () => {
                 />
               </svg>
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+            <h2 className="mb-4 font-['Plus_Jakarta_Sans'] text-2xl font-bold text-[var(--lt-text)]">
               Please Verify Your Email
             </h2>
-            <p className="text-gray-600 mb-8">
+            <p className="mb-8 text-[var(--lt-muted)]">
               We sent an email to{' '}
-              <span className="font-semibold text-gray-800">{user.email}</span>.
-              Please check your inbox and verify your email to access the app.
+              <span className="font-semibold text-[var(--lt-text)]">
+                {user.email}
+              </span>
+              . Please check your inbox and verify your email to access the app.
             </p>
 
             {resendStatus === 'success' && (
