@@ -32,6 +32,7 @@ export interface AuthUserPayload {
   name: string;
   avatarUrl: string | null;
   emailVerified: boolean;
+  hasPassword: boolean;
   createdAt: Date;
 }
 

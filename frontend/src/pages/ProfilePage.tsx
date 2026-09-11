@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
-import { api } from "../lib/api";
-import { useAuth } from "../hooks/useAuth";
-import { Heatmap } from "../components/profile/Heatmap";
-import { Spinner } from "../components/ui/Spinner";
+import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { api } from '../lib/api';
+import { useAuth } from '../hooks/useAuth';
+import { Heatmap } from '../components/profile/Heatmap';
+import { Spinner } from '../components/ui/Spinner';
 
 interface HeatmapData {
   date: string;
@@ -32,10 +33,10 @@ export const ProfilePage = () => {
         setHeatmapData(heatmapResponse.data.data || []);
 
         // Fetch dashboard stats
-        const statsResponse = await api.get("/activity/dashboard");
+        const statsResponse = await api.get('/activity/dashboard');
         setStats(statsResponse.data);
       } catch (error) {
-        console.error("Failed to fetch profile data:", error);
+        console.error('Failed to fetch profile data:', error);
       } finally {
         setIsLoading(false);
       }
@@ -60,10 +61,10 @@ export const ProfilePage = () => {
   const handleLogout = async () => {
     try {
       await logout();
-      window.location.replace("/login");
+      window.location.replace('/login');
     } catch (error) {
-      console.error("Logout error:", error);
-      window.location.replace("/login");
+      console.error('Logout error:', error);
+      window.location.replace('/login');
     }
   };
 
@@ -100,6 +101,12 @@ export const ProfilePage = () => {
             Logout
           </button>
         </div>
+        <Link
+          to="/profile/security"
+          className="inline-block mt-4 text-sm text-blue-600 hover:text-blue-700"
+        >
+          {user?.hasPassword ? 'Change password' : 'Set a password'}
+        </Link>
       </div>
 
       {/* Stats Cards */}

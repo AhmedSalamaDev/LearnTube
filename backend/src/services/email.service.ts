@@ -93,3 +93,41 @@ export async function sendVerificationEmail(to: string, token: string) {
     throw error;
   }
 }
+
+export async function sendPasswordResetEmail(to: string, token: string) {
+  const resetUrl = `${FRONTEND_URL}/reset-password?token=${encodeURIComponent(token)}`;
+
+  try {
+    const data = await resend.emails.send({
+      from: FROM_EMAIL,
+      to,
+      subject: 'Reset your LearnTube password',
+      html: `
+                <!DOCTYPE html>
+                <html lang="en">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Reset your LearnTube password</title>
+                </head>
+                <body style="margin: 0; padding: 40px 20px; background-color: #f4f7f6; font-family: 'Segoe UI', Helvetica, Arial, sans-serif; color: #333333;">
+                    <div style="max-width: 600px; margin: 0 auto; padding: 40px; background: #ffffff; border-radius: 8px;">
+                        <h1 style="margin: 0 0 24px; color: #0b132b;">Reset your password</h1>
+                        <p style="line-height: 24px;">We received a request to reset your LearnTube password. This link expires in 15 minutes.</p>
+                        <p style="margin: 32px 0; text-align: center;">
+                            <a href="${resetUrl}" style="display: inline-block; padding: 14px 30px; background: #4285F4; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: bold;">Reset password</a>
+                        </p>
+                        <p style="font-size: 14px; line-height: 21px; word-break: break-all;">If the button does not work, copy this link into your browser:<br><a href="${resetUrl}" style="color: #4285F4;">${resetUrl}</a></p>
+                        <p style="font-size: 14px; color: #777777;">If you did not request this, you can safely ignore this email.</p>
+                    </div>
+                </body>
+                </html>
+            `,
+    });
+    console.log('Password reset email sent successfully:', data);
+    return data;
+  } catch (error) {
+    console.error('Failed to send password reset email:', error);
+    throw error;
+  }
+}

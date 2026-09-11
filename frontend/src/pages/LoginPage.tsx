@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
 import { Button } from '../components/ui/Button';
 
@@ -154,6 +155,17 @@ export const LoginPage = () => {
             {isLogin ? 'Sign In' : 'Create Account'}
           </Button>
         </form>
+
+        {isLogin && (
+          <div className="mt-4 text-center">
+            <Link
+              to="/forgot-password"
+              className="text-sm text-blue-600 hover:text-blue-700"
+            >
+              Forgot your password?
+            </Link>
+          </div>
+        )}
 
         <div className="mt-6 flex items-center justify-between">
           <hr className="w-full border-gray-300" />

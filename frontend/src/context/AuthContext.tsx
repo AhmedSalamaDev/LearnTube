@@ -15,6 +15,7 @@ interface User {
   avatarUrl: string | null;
   createdAt: string;
   emailVerified: boolean;
+  hasPassword: boolean;
 }
 
 interface AuthContextType {
@@ -69,13 +70,15 @@ export const AuthProvider = ({ children }: AuthProviderProps) => {
   const logout = useCallback(async () => {
     console.log('[AuthContext] Logout initiated');
     try {
-      await api.post('/auth/logout');
+      const refreshToken = localStorage.getItem('refresh_token');
+      await api.post('/auth/logout', refreshToken ? { refreshToken } : {});
       console.log('[AuthContext] Logout API call successful');
     } catch (error) {
       console.error('[AuthContext] Logout failed:', error);
     } finally {
       setUser(null);
       localStorage.removeItem('auth_token');
+      localStorage.removeItem('refresh_token');
       console.log('[AuthContext] User state cleared and token removed');
     }
   }, []);

@@ -8,6 +8,9 @@ import { DashboardPage } from './pages/DashboardPage';
 import { ProfilePage } from './pages/ProfilePage';
 import { CoursePage } from './pages/CoursePage';
 import { PlayerPage } from './pages/PlayerPage';
+import { ForgotPasswordPage } from './pages/ForgotPasswordPage';
+import { ResetPasswordPage } from './pages/ResetPasswordPage';
+import { AccountSecurityPage } from './pages/AccountSecurityPage';
 
 function App() {
   return (
@@ -17,11 +20,14 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
           <Route path="/verify-email" element={<VerifyEmailPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
 
           <Route element={<ProtectedLayout />}>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/profile/security" element={<AccountSecurityPage />} />
             <Route path="/course/:id" element={<CoursePage />} />
             <Route
               path="/course/:courseId/video/:videoId"

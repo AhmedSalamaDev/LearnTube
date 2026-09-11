@@ -35,7 +35,7 @@ import {
   verifyPassword,
 } from '../services/password.service.ts';
 import { AUTH_TOKEN_TTL } from '../utils/auth.contracts.ts';
-import { generateAccessToken, generateJwt } from '../utils/auth.utils.ts';
+import { generateAccessToken } from '../utils/auth.utils.ts';
 
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOGIN_LOCKOUT_MINUTES = 15;
@@ -51,6 +51,7 @@ function toAuthUser(user: NonNullable<RequestWithUser['user']>) {
     name: user.name,
     avatarUrl: user.avatarUrl ?? null,
     emailVerified: user.emailVerified,
+    hasPassword: Boolean(user.passwordHash),
     createdAt: user.createdAt,
   };
 }
@@ -105,14 +106,20 @@ export async function handleGoogleCallback(
       avatarUrl: profile.photos?.[0]?.value,
     });
 
-    const token = generateJwt({
+    const accessToken = generateAccessToken({
       userId: user.id,
       email: user.email,
+    });
+    const issuedRefreshToken = await issueRefreshToken({
+      userId: user.id,
+      ...readRequestMeta(req),
     });
 
     const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
 
-    res.redirect(`${frontendUrl}/auth/callback?token=${token}`);
+    res.redirect(
+      `${frontendUrl}/auth/callback?token=${encodeURIComponent(accessToken)}&refreshToken=${encodeURIComponent(issuedRefreshToken.refreshToken)}`,
+    );
   } catch (error) {
     console.error('Google callback error:', error);
     res.status(500).json({
@@ -122,7 +129,10 @@ export async function handleGoogleCallback(
   }
 }
 
-import { sendVerificationEmail } from '../services/email.service.ts';
+import {
+  sendPasswordResetEmail,
+  sendVerificationEmail,
+} from '../services/email.service.ts';
 
 export async function register(
   req: RequestWithUser,
@@ -551,11 +561,10 @@ export async function forgotPassword(
       expiresAt: resetToken.expiresAt,
     });
 
+    await sendPasswordResetEmail(user.email, resetToken.rawToken);
+
     res.json({
       message: 'If your account exists, a password reset link has been issued.',
-      data: {
-        resetToken: resetToken.rawToken,
-      },
     });
   } catch (error) {
     res.status(500).json({
