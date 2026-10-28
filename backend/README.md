@@ -134,7 +134,7 @@ Deleting a course removes the user's link to it. It does not delete the shared c
 | `GET`   | `/activity/heatmap?year=YYYY`            | Returns daily totals for a year          |
 | `GET`   | `/activity/dashboard`                    | Returns overall learning totals          |
 
-The frontend currently composes detailed analytics from these existing endpoints. In particular, it loads the user's courses and then requests progress for each course. A future consolidated analytics endpoint can reduce that number of requests.
+The `GET /courses` endpoint returns each enrolled course enriched with the user's aggregated progress and most recently watched video metadata, allowing the dashboard and analytics views to load without per-course follow-up requests.
 
 ## Data Model
 

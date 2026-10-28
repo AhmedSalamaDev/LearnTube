@@ -214,14 +214,18 @@ export async function getCourseProgressData(userId: string, courseId: string) {
     .where(eq(videos.coursesId, courseId));
 
   const videoProgressList = await db
-    .select()
+    .select({
+      userId: progress.userId,
+      videoId: progress.videoId,
+      videoTitle: videos.title,
+      checkpointSeconds: progress.checkpointSeconds,
+      totalWatchedSeconds: progress.totalWatchedSeconds,
+      completed: progress.completed,
+      lastWatchedAt: progress.lastWatchedAt,
+    })
     .from(progress)
-    .where(
-      and(
-        eq(progress.userId, userId),
-        sql`${progress.videoId} IN (SELECT id FROM ${videos} WHERE ${videos.coursesId} = ${courseId})`,
-      ),
-    );
+    .innerJoin(videos, eq(progress.videoId, videos.id))
+    .where(and(eq(progress.userId, userId), eq(videos.coursesId, courseId)));
 
   return {
     course,

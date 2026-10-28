@@ -20,6 +20,9 @@ interface Course {
   title: string;
   thumbnailUrl: string | null;
   totalDurationSeconds: number;
+  totalWatchedSeconds?: number;
+  completedVideos?: number;
+  totalVideos?: number;
 }
 
 interface CourseProgress {
@@ -110,14 +113,13 @@ export const AnalyticsPage = () => {
             api.get('/courses'),
           ]);
         const courses: Course[] = coursesResponse.data.courses || [];
-        const progress = await Promise.all(
-          courses.map(async (course) => {
-            const response = await api.get(
-              `/activity/course-progress/${course.id}`,
-            );
-            return { ...response.data, course } as CourseProgress;
-          }),
-        );
+        const progress: CourseProgress[] = courses.map((course) => ({
+          course,
+          totalWatchedSeconds: course.totalWatchedSeconds || 0,
+          completedVideos: course.completedVideos || 0,
+          totalVideos: course.totalVideos || 0,
+          totalDurationSeconds: course.totalDurationSeconds || 0,
+        }));
         setStats(statsResponse.data);
         setHeatmapData(heatmapResponse.data.data || []);
         setCourseProgress(progress);

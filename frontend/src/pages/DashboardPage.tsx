@@ -43,38 +43,7 @@ export const DashboardPage = () => {
       setIsLoading(true);
       setError('');
       const response = await api.get('/courses');
-      const enriched = await Promise.all(
-        (response.data.courses || []).map(async (course: Course) => {
-          try {
-            const progressResponse = await api.get(
-              `/activity/course-progress/${course.id}`,
-            );
-            const progress = progressResponse.data;
-            const watched = progress.totalWatchedSeconds || 0;
-            const total =
-              progress.totalDurationSeconds || course.totalDurationSeconds || 0;
-            const latest = [...(progress.videoProgress || [])].sort(
-              (a, b) =>
-                new Date(b.lastWatchedAt || 0).getTime() -
-                new Date(a.lastWatchedAt || 0).getTime(),
-            )[0];
-            return {
-              ...course,
-              progressPercentage:
-                total > 0 ? Math.min(100, (watched / total) * 100) : 0,
-              totalWatchedSeconds: watched,
-              completedVideos: progress.completedVideos || 0,
-              totalVideos: progress.totalVideos || 0,
-              currentVideoId: latest?.videoId,
-              currentCheckpoint: latest?.checkpointSeconds || 0,
-              currentVideoTitle: latest?.videoTitle,
-              lastWatchedAt: latest?.lastWatchedAt,
-            };
-          } catch {
-            return { ...course, progressPercentage: 0, totalWatchedSeconds: 0 };
-          }
-        }),
-      );
+      const enriched: Course[] = response.data.courses || [];
       setCourses(enriched);
       setResumeCourse(
         enriched

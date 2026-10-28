@@ -1,6 +1,12 @@
 import { db } from '../db/index.ts';
-import { courses, videos, userCourses } from '../db/schema.ts';
-import { eq, and } from 'drizzle-orm';
+import {
+  courses,
+  videos,
+  userCourses,
+  courseProgress,
+  progress,
+} from '../db/schema.ts';
+import { eq, and, sql } from 'drizzle-orm';
 import {
   extractYouTubeId,
   fetchVideoMetadata,
@@ -150,15 +156,86 @@ async function createPlaylistCourse(userId: string, playlistId: string) {
 }
 
 export async function getUserCourses(userId: string) {
-  const result = await db
+  const rows = await db
     .select({
       course: courses,
+      totalWatchedSeconds: sql<number>`COALESCE(${courseProgress.totalWatchedSeconds}, 0)`,
+      completedVideos: sql<number>`COALESCE(${courseProgress.completedVideos}, 0)`,
+      totalVideos: sql<number>`(
+        SELECT COUNT(*)::int FROM ${videos}
+        WHERE ${videos.coursesId} = ${courses.id}
+      )`,
     })
     .from(userCourses)
     .innerJoin(courses, eq(userCourses.courseId, courses.id))
+    .leftJoin(
+      courseProgress,
+      and(
+        eq(courseProgress.coursesId, courses.id),
+        eq(courseProgress.userId, userId),
+      ),
+    )
     .where(eq(userCourses.userId, userId));
 
-  return result.map((r) => r.course);
+  if (rows.length === 0) {
+    return [];
+  }
+
+  const userVideoProgress = await db
+    .select({
+      coursesId: videos.coursesId,
+      videoId: progress.videoId,
+      videoTitle: videos.title,
+      checkpointSeconds: progress.checkpointSeconds,
+      lastWatchedAt: progress.lastWatchedAt,
+    })
+    .from(progress)
+    .innerJoin(videos, eq(progress.videoId, videos.id))
+    .innerJoin(
+      userCourses,
+      and(
+        eq(userCourses.courseId, videos.coursesId),
+        eq(userCourses.userId, userId),
+      ),
+    )
+    .where(eq(progress.userId, userId))
+    .orderBy(sql`${progress.lastWatchedAt} DESC`);
+
+  const latestByCourse = new Map<
+    string,
+    (typeof userVideoProgress)[number]
+  >();
+  for (const item of userVideoProgress) {
+    if (!latestByCourse.has(item.coursesId)) {
+      latestByCourse.set(item.coursesId, item);
+    }
+  }
+
+  return rows.map(
+    ({ course, totalWatchedSeconds, completedVideos, totalVideos }) => {
+      const latest = latestByCourse.get(course.id);
+      const watched = Number(totalWatchedSeconds) || 0;
+      const completed = Number(completedVideos) || 0;
+      const videosCount = Number(totalVideos) || 0;
+      const totalDuration = course.totalDurationSeconds || 0;
+      const progressPercentage =
+        totalDuration > 0
+          ? Math.min(100, (watched / totalDuration) * 100)
+          : 0;
+
+      return {
+        ...course,
+        progressPercentage,
+        totalWatchedSeconds: watched,
+        completedVideos: completed,
+        totalVideos: videosCount,
+        currentVideoId: latest?.videoId,
+        currentVideoTitle: latest?.videoTitle,
+        currentCheckpoint: latest?.checkpointSeconds || 0,
+        lastWatchedAt: latest?.lastWatchedAt,
+      };
+    },
+  );
 }
 
 export async function getCourseWithVideos(courseId: string, userId: string) {
